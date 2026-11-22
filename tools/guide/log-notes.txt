@@ -1,0 +1,100 @@
+One block per commit, keyed by the commit subject. Built into log.html.
+Paragraphs that start with "$ " are shown as commands.
+
+== Start the project: ten dots and a spring
+The question, before any code. Requirements, line endings and an empty package.
+
+Writing the question down first decides what counts as an answer: an error on times where nothing was measured.
+
+== Add the damped oscillator and its closed form
+The truth that everything will be scored against. The closed form is checked against numerical derivatives, so a mistake in it can't quietly flatter a network later.
+
+The detail to remember: `b = (v0 + delta * x0) / omega_d`, which isn't zero for a mass at rest.
+
+$ python -m pytest tests/test_physics.py -q
+
+== Add ten noisy measurements and the scoring window
+Data on one side of t = 0.3, questions on the other, and a test that keeps them apart. Noise and seed are stored with the data.
+
+$ python -m pytest tests/test_data.py -q
+
+== Add a least-squares baseline and its noise floor
+Written before any network, so the bar is set by something other than a weak opponent. Two unknown constants, ten equations, and a covariance that gives the best error to expect.
+
+A test simulates 2,000 noisy data sets and checks that the predicted error is the average one.
+
+$ python -m pytest tests/test_classical.py -q
+
+== Add the network
+A multilayer perceptron in float64 with a private random generator.
+
+The test for the private generator failed at first. `nn.Linear` draws default weights from the global generator before they are replaced, so building a network changed every later random number. `skip_init` fixed it.
+
+$ python -m pytest tests/test_network.py -q
+
+== Differentiate the network with respect to time
+x' and x'' by automatic differentiation, with `create_graph=True` so that the loss can still reach the weights.
+
+A test with a straight line raised `RuntimeError`: the slope of a line is a constant with no graph. The fix returns zeros. Another test records that a ReLU network has no second derivative.
+
+$ python -m pytest tests/test_derivatives.py -q
+
+== Add the data loss and the physics residual
+The residual is divided by k so that both terms are displacements of about the same size.
+
+A test records that x = 0 has a physics loss of exactly zero, which is why the dots are needed.
+
+$ python -m pytest tests/test_losses.py -q
+
+== Train with Adam, then L-BFGS
+One training function, used by both networks. The two calls differ by a single loss term.
+
+The settings were chosen on seeds 100 to 102. L-BFGS stays off for the plain net because it makes the future error worse, and a baseline should be given its best chance.
+
+$ python -m pytest tests/test_training.py -q
+
+== Derive the gradients by hand in NumPy
+Second-order forward propagation and a reverse pass with three adjoints. Every weight gradient is compared with autograd, and so is the Adam update.
+
+$ python -m pytest tests/test_scratch.py -q
+
+== Port the NumPy network to the browser
+The same arithmetic with explicit loops, so that the figures can train a real network. A JSON file written by NumPy holds the expected loss and gradients.
+
+$ node --test tests/engine.test.mjs
+
+== Recover c and k from the dots
+The inverse problem needs two more trainable numbers and almost no new code. They are trained as logarithms.
+
+$ python -m pytest tests/test_inverse.py -q
+
+== Add a dense check of the residual
+A trial run on a faster spring reported a physics loss near 1e-7 and predicted the wrong motion. Sixty points were too few to notice. This function measures the same residual at 2,000 times, and every later experiment records it.
+
+== Add the experiments
+Headline, ablations, frequency and inverse. Each writes one JSON file, and the seeds used for reporting are different from the seeds used for tuning.
+
+$ python -m experiments.headline
+
+== Record the results
+The measured numbers, committed next to the code that produced them. The guide reads them from these files.
+
+== Build the guide's styles and figures
+The design system, a small kit for plots, and figures that compute in the page.
+
+== Write the guide
+Chapters as HTML fragments. Numbers in the text are references into the result files, and the build fails if one doesn't exist.
+
+$ python -m tools.guide.build
+
+== Annotate the source and the questions
+Notes are attached to lines by their text, so they survive edits that move lines. The build stops if an anchor disappears.
+
+== Check everything on every push
+Tests in Python and Node, and a check that the committed pages match their sources.
+
+== Describe the project in the README
+What it is, the measured results, how to run it.
+
+== Publish the guide
+The built pages. This entry can't list itself with a hash until the next build, so the newest commit is always one step ahead of this page.

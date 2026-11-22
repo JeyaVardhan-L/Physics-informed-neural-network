@@ -1,0 +1,34 @@
+title: Running it backwards
+short: Inverse
+hint: find c and k
+lede: The dots are known and the spring is not. The same loss finds both the curve and the constants.
+---
+<div class="prose">
+<p>So far the law was known completely. In practice the form of a law is often known while some number in it is not: a friction coefficient, a diffusion rate. Finding it from measurements is called an <b>inverse problem</b>.</p>
+<p>With a PINN it takes a few extra lines. Make <i>c</i> and <i>k</i> trainable and give them to the optimiser next to the weights. They appear inside the residual, so the gradient of the loss reaches them through the same backward pass. <a class="srclink" href="source.html#pinn/inverse.py@log_c = torch.tensor">the two parameters</a></p>
+</div>
+<figure class="fig" data-fig="inverse">
+<!--fig-->
+<figcaption><b>Two numbers on their way</b> The start is deliberately poor, k = 100 and c = 1. Compare noise levels, and compare how tightly the two numbers are pinned down.</figcaption>
+</figure>
+<div class="prose">
+<h3>Three decisions</h3>
+<p><b>Train the logarithms.</b> <i>c</i> and <i>k</i> must be positive, and <i>e</i> to any power is. Adam moves each parameter by roughly the learning rate per step, so on a logarithm a step is a relative change, about the same for <i>c</i> near 3 and <i>k</i> near 225.</p>
+<p><b>Scale by a constant.</b> The residual is divided by the first guess for <i>k</i>, which is fixed. Dividing by the trainable <i>k</i> would change the exchange rate between the two losses during the search.</p>
+<p><b>Leave m alone.</b> Multiply <i>m</i>, <i>c</i> and <i>k</i> by the same number and the equation is unchanged. Two springs that differ in this way move identically, so no amount of position data can tell them apart. Only the ratios <i>c/m</i> and <i>k/m</i> are <b>identifiable</b>. Finding <i>m</i> itself would take a measurement of force.</p>
+<h3>What was found</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Noise</th><th class="num">k, median (range)</th><th class="num">c, median (range)</th></tr></thead>
+<tbody>
+<tr><td>none</td><td class="num">{{fix1 inverse.0.0.k}} ({{fix1 inverse.0.0.k.min}} to {{fix1 inverse.0.0.k.max}})</td><td class="num">{{fix2 inverse.0.0.c}} ({{fix2 inverse.0.0.c.min}} to {{fix2 inverse.0.0.c.max}})</td></tr>
+<tr><td>0.01</td><td class="num">{{fix1 inverse.0.01.k}} ({{fix1 inverse.0.01.k.min}} to {{fix1 inverse.0.01.k.max}})</td><td class="num">{{fix2 inverse.0.01.c}} ({{fix2 inverse.0.01.c.min}} to {{fix2 inverse.0.01.c.max}})</td></tr>
+<tr><td>0.03</td><td class="num">{{fix1 inverse.0.03.k}} ({{fix1 inverse.0.03.k.min}} to {{fix1 inverse.0.03.k.max}})</td><td class="num">{{fix2 inverse.0.03.c}} ({{fix2 inverse.0.03.c.min}} to {{fix2 inverse.0.03.c.max}})</td></tr>
+<tr><td>true</td><td class="num">225</td><td class="num">3</td></tr>
+</tbody></table></div>
+<p>In relative terms <i>k</i> is far better determined than <i>c</i>. Stiffness sets the timing of the swing, and ten dots see timing well: the moment the mass passes the middle, the moment it turns. Friction shows only as a small loss of height over part of one swing, and noise can imitate that. Without noise both numbers come back to four digits, so the limit here is the data.</p>
+<p>With 1% noise the error after the dots is {{sci inverse.0.01.mse}}, compared with {{sci headline.median_mse.pinn}} when c and k are given. Knowing the constants is worth that much.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">How does a PINN estimate an unknown coefficient?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>The coefficient becomes a trainable parameter inside the residual. The dots hold the curve in place, and if the coefficient is wrong, that curve can't satisfy the equation. The physics loss then has a gradient that pushes the coefficient towards a value that fits. I train its logarithm, so it stays positive. What can be recovered is limited by identifiability and by noise, and I would report the spread over seeds along with the estimate.</p></div></div>
+</div>

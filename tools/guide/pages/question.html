@@ -1,0 +1,26 @@
+title: Ten dots
+short: Ten dots
+hint: the problem
+lede: Many curves fit the same ten points. Choosing between them needs something the points do not contain.
+---
+<div class="prose">
+<p>The data is ten pairs of numbers: a time and a position. The times are evenly spaced from 0 to 0.3 seconds. The positions come from a real damped spring with Gaussian noise of standard deviation 0.01 added, about one percent of the starting height. <a class="srclink" href="source.html#pinn/data.py@def measure">making the dots</a></p>
+<p>The task is to predict the position from 0.3 to 1 second. This is <b>extrapolation</b>: answering outside the region the data covers. Interpolation, answering between the dots, is easy here and almost anything does it well.</p>
+</div>
+<figure class="fig" data-fig="manycurves">
+<!--fig-->
+<figcaption><b>Five ways to continue</b> Switch between the curves and compare the two errors. A small error on the dots says very little about the second number.</figcaption>
+</figure>
+<div class="prose">
+<h3>What the dots do not say</h3>
+<p>The ten dots pin down a curve inside their window. Outside it, infinitely many curves agree with all ten and disagree with each other. No amount of extra training can choose between them, because every one of them already has a good score.</p>
+<p>Something has to break the tie. A statistician calls it a <b>prior</b>, and an engineer calls it domain knowledge. Every model has one, including models that claim to have none. A polynomial prefers curves that run off to infinity. A tanh network prefers to carry on along its last bend and then level out. Neither preference has anything to do with springs.</p>
+<p>A PINN replaces the accidental preference with a deliberate one: among all curves near the dots, take one that obeys the equation of motion.</p>
+<h3>How a prediction is scored</h3>
+<p>Each method is scored by the mean squared error at 500 times in (0.3, 1], against the true motion with no noise. The scoring grid never overlaps the data, and <a class="srclink" href="source.html#tests/test_data.py@def test_scoring_times_never_touch_the_dots">a test</a> makes sure of it.</p>
+<p>Two reference points make the score readable. A method that always answers zero, meaning "it has stopped", gets {{sci headline.median_mse.zero}}. A method that uses the dots and the equation as well as possible gets about {{sci headline.noise_floor}} on average, and <a href="results.html">chapter 7</a> explains why. Useful answers lie between those two numbers.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">Why can't a normal network just learn the pattern from the ten points?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>Because the points only cover about 70% of one swing, and the loss is computed only at those points. Every curve that passes near them has nearly the same loss, whatever it does afterwards. Training can't tell them apart, so the continuation is decided by the architecture and the random starting weights. The network does its job well. Its job never mentioned the future.</p></div></div>
+</div>

@@ -1,0 +1,28 @@
+title: Ten Dots
+---
+<section class="cover wide">
+<span class="eyebrow">Field guide &middot; A physics-informed neural network, from first principles</span>
+<h1>Ten dots and a <em>law</em></h1>
+<div class="intro">
+<p>A weight hangs on a spring. It is measured ten times in its first 0.3 seconds, with a little noise. Where is it for the next 0.7?</p>
+<p>A neural network trained on the ten dots fits them well and then guesses. A second network, with the same starting weights, the same dots and the same size, is also required to satisfy one line of physics, <i>m x&Prime; + c x&prime; + k x = 0</i>, at times where nobody measured anything. Its curve stays on the true motion for the whole second.</p>
+<p>The second network is a <b>physics-informed neural network</b>, or PINN. This guide builds one in PyTorch, then builds it again in NumPy with every gradient derived by hand, then runs that version in your browser. It measures what each part does by removing it.</p>
+<p>It also covers where the idea fails, when a plain least-squares fit does the same job in microseconds, and why a tiny training loss can belong to a completely wrong answer.</p>
+</div>
+<div class="numbers">
+<div><b>{{sci headline.median_mse.plain}}</b><span>plain net, error after the dots</span></div>
+<div><b>{{sci headline.median_mse.pinn}}</b><span>PINN, same net, same dots</span></div>
+<div><b>{{sci headline.median_mse.classical}}</b><span>least squares with the exact formula</span></div>
+<div><b>{{int headline.vs_zero}}&times;</b><span>lower error than always answering zero</span></div>
+</div>
+<p class="small">Mean squared error on 0.3 to 1 s, median of ten seeds, each with its own dots and its own starting weights.</p>
+</section>
+<figure class="fig" data-fig="live">
+<!--fig-->
+<figcaption><b>Training, live</b> Both networks are being trained in this page, in plain JavaScript. Turn the physics off and watch the blue curve become the red one.</figcaption>
+</figure>
+<div class="divider">Contents</div>
+<!--toc-->
+<div class="prose" style="margin-top:56px">
+<p>Reading it for the first time? The <a href="route.html">two-day route</a> goes through the code and the guide side by side, with a command to run and a question to answer at every stop. Every source file is printed with notes in the <a href="source.html">annotated source</a>, and the <a href="questions.html">questions</a> page has short answers to the things people ask.</p>
+</div>

@@ -1,0 +1,157 @@
+title: Two days with the code
+short: Route
+lede: Guide on one screen, code on the other. Each stop has something to read, run, change and say aloud.
+---
+<div class="prose">
+<p>The order differs a little from the chapters, because the code is easier to follow if the spring comes first. Times are generous. The ticks are stored in this browser only.</p>
+<p>The <b>change</b> steps matter most. Predict what will happen, then break the code, then read the failing test. Undo each change before moving on with <code>git checkout .</code>, or <code>git stash</code> if you want to keep it.</p>
+</div>
+<div class="divider">Day 1 &middot; about 5 h 05 min</div>
+<section class="prose route" id="stop-1">
+<h3>Stop 1 &middot; 30 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">Set up and see it work</p>
+<label><input type="checkbox" id="r1a"><span><b>Read.</b> <a href="index.html">The cover</a>, and the README.</span></label>
+<label><input type="checkbox" id="r1b"><span><b>Do.</b> Clone, make an environment, run the tests.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>git clone https://github.com/JeyaVardhan-L/Physics-informed-neural-network.git
+cd Physics-informed-neural-network
+python -m venv .venv
+.venv\Scripts\activate            # Windows. Linux and macOS: source .venv/bin/activate
+pip install -r requirements.txt
+python -m pytest -q</pre></div>
+<p><b>Expect.</b> All tests pass in about two minutes. If <code>python</code> is not found on Linux or macOS, use <code>python3</code>.</p>
+<label><input type="checkbox" id="r1c"><span><b>Change.</b> On the cover, press <b>Physics on</b> to switch it off. Explain to yourself why the two curves are now identical.</span></label>
+<label><input type="checkbox" id="r1d"><span><b>Say.</b> What is given, what is asked, and what is the one thing the second network has that the first does not?</span></label>
+</section>
+<section class="prose route" id="stop-2">
+<h3>Stop 2 &middot; 45 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">The spring</p>
+<label><input type="checkbox" id="r2a"><span><b>Read.</b> <a href="spring.html">Chapter 2</a>, then <a href="source.html#pinn/physics.py">physics.py</a> and <a href="source.html#tests/test_physics.py">its tests</a>.</span></label>
+<label><input type="checkbox" id="r2b"><span><b>Do.</b> Work out &delta;, &omega;<sub>0</sub>, &omega;<sub>d</sub> and &zeta; on paper, then check.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -c "from pinn.physics import Oscillator as O; o=O(); print(o.delta, o.omega0, o.omega_d, o.zeta)"</pre></div>
+<p><b>Expect.</b> 1.5, 15, 14.92 and 0.1.</p>
+<label><input type="checkbox" id="r2c"><span><b>Change.</b> In <code>_coefficients</code>, replace <code>self.delta * self.x0</code> with <code>0</code> and run <code>python -m pytest tests/test_physics.py</code>. One test fails: find out which, and why the others can't see it. Undo it with <code>git checkout pinn/physics.py</code>.</span></label>
+<label><input type="checkbox" id="r2d"><span><b>Say.</b> Derive the solution from x = e<sup>st</sup>. Why is b not zero when the mass starts at rest?</span></label>
+</section>
+<section class="prose route" id="stop-3">
+<h3>Stop 3 &middot; 30 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">The dots and the wall</p>
+<label><input type="checkbox" id="r3a"><span><b>Read.</b> <a href="question.html">Chapter 1</a> and <a href="source.html#pinn/data.py">data.py</a>.</span></label>
+<label><input type="checkbox" id="r3b"><span><b>Do.</b> Print the dots and compare two seeds.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -c "from pinn.data import measure; from pinn.physics import Oscillator as O; print(measure(O(), seed=0).x.round(3)); print(measure(O(), seed=1).x.round(3))"</pre></div>
+<p><b>Expect.</b> Two rows that differ in the second decimal place.</p>
+<label><input type="checkbox" id="r3c"><span><b>Change.</b> In <code>future_grid</code>, remove the <code>[1:]</code> and run the data tests. One fails. Undo it.</span></label>
+<label><input type="checkbox" id="r3d"><span><b>Say.</b> Why is extrapolation a different problem from interpolation? Why does a perfect fit to ten dots prove nothing?</span></label>
+</section>
+<section class="prose route" id="stop-4">
+<h3>Stop 4 &middot; 45 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">The network and its blind spot</p>
+<label><input type="checkbox" id="r4a"><span><b>Read.</b> <a href="network.html">Chapter 3</a> and <a href="source.html#pinn/network.py">network.py</a>.</span></label>
+<label><input type="checkbox" id="r4b"><span><b>Do.</b> Train the plain net and score it.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -c "from pinn.data import measure; from pinn.physics import Oscillator as O; from pinn.models import *; o=O(); r=train_plain(measure(o)); print(r.history[-1]['data'], future_mse(r.predict,o), future_mse(lambda t:0*t,o))"</pre></div>
+<p><b>Expect.</b> A data loss far below 0.0001, then an error after the dots above 1, then 0.078 for answering zero. Exact digits vary with the PyTorch version and the machine.</p>
+<label><input type="checkbox" id="r4c"><span><b>Change.</b> Count the 2,209 parameters on paper, layer by layer.</span></label>
+<label><input type="checkbox" id="r4d"><span><b>Say.</b> Why are both networks built with the same seed? Why is the last layer linear?</span></label>
+</section>
+<section class="prose route" id="stop-5">
+<h3>Stop 5 &middot; 75 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">Derivatives of a network</p>
+<label><input type="checkbox" id="r5a"><span><b>Read.</b> <a href="derivatives.html">Chapter 4</a> and <a href="source.html#pinn/derivatives.py">derivatives.py</a>. This is the hardest idea, so go slowly.</span></label>
+<label><input type="checkbox" id="r5b"><span><b>Do.</b> Redo FIG_006 with a pen before stepping through it.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -c "import torch; from pinn.derivatives import derivatives; t=torch.linspace(0,1,5,dtype=torch.float64).reshape(-1,1); print(derivatives(lambda t: t**3, t))"</pre></div>
+<p><b>Expect.</b> x = t&sup3;, v = 3t&sup2;, a = 6t.</p>
+<label><input type="checkbox" id="r5c"><span><b>Change.</b> Set <code>create_graph=False</code> and run <code>python -m pytest tests/test_derivatives.py</code>. Read which tests fail and how. Nothing crashes: the guard for straight lines returns zeros. Undo it.</span></label>
+<label><input type="checkbox" id="r5d"><span><b>Say.</b> Two kinds of derivative are involved. Which one goes into the loss and which one goes to the optimiser?</span></label>
+</section>
+<section class="prose route" id="stop-6">
+<h3>Stop 6 &middot; 60 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">The loss</p>
+<label><input type="checkbox" id="r6a"><span><b>Read.</b> <a href="loss.html">Chapter 5</a> and <a href="source.html#pinn/losses.py">losses.py</a>.</span></label>
+<label><input type="checkbox" id="r6b"><span><b>Do.</b> Fit FIG_008 by hand until the readout turns green. Then train the PINN. It takes a minute or two.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -c "from pinn.data import measure; from pinn.physics import Oscillator as O; from pinn.models import *; o=O(); r=train_pinn(measure(o),o); print(future_mse(r.predict,o), dense_residual(r.net,o))"</pre></div>
+<p><b>Expect.</b> An error of a few millionths and a dense residual below 0.00001.</p>
+<label><input type="checkbox" id="r6c"><span><b>Change.</b> Find the single dictionary entry that makes a PINN out of a plain net in <a href="source.html#pinn/models.py">models.py</a>.</span></label>
+<label><input type="checkbox" id="r6d"><span><b>Say.</b> Why does neither term work alone? Why divide the residual by k?</span></label>
+</section>
+<section class="prose route" id="stop-7">
+<h3>Stop 7 &middot; 20 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">Say it back</p>
+<label><input type="checkbox" id="r7a"><span><b>Read.</b> Close the guide.</span></label>
+<label><input type="checkbox" id="r7b"><span><b>Do.</b> On a blank page, write the loss, the two kinds of derivative, and the five files that matter with one line each.</span></label>
+
+<p><b>Expect.</b> You can do it in ten minutes without looking.</p>
+<label><input type="checkbox" id="r7c"><span><b>Change.</b> Open <a href="questions.html">Questions</a>, choose the Basics filter and answer each one aloud before reading the answer.</span></label>
+<label><input type="checkbox" id="r7d"><span><b>Say.</b> Explain the project to someone who doesn't know what a derivative is.</span></label>
+</section>
+<div class="divider">Day 2 &middot; about 5 h 30 min</div>
+<section class="prose route" id="stop-8">
+<h3>Stop 8 &middot; 45 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">Training</p>
+<label><input type="checkbox" id="r8a"><span><b>Read.</b> <a href="training.html">Chapter 6</a> and <a href="source.html#pinn/train.py">train.py</a>.</span></label>
+<label><input type="checkbox" id="r8b"><span><b>Do.</b> Scrub through FIG_011 and name what is happening at four places.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -m experiments.ablations optimiser</pre></div>
+<p><b>Expect.</b> Four settings, three seeds each. It takes several minutes. Then run <code>git diff --stat results</code> to see that your numbers are close to the committed ones, and <code>git checkout results</code> to put them back.</p>
+<label><input type="checkbox" id="r8c"><span><b>Change.</b> In FIG_000, count how many steps it takes before the blue curve leaves zero after t = 0.5.</span></label>
+<label><input type="checkbox" id="r8d"><span><b>Say.</b> What does L-BFGS know that Adam doesn't? Why does it need a closure?</span></label>
+</section>
+<section class="prose route" id="stop-9">
+<h3>Stop 9 &middot; 45 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">The results, and how to doubt them</p>
+<label><input type="checkbox" id="r9a"><span><b>Read.</b> <a href="results.html">Chapter 7</a>, <a href="source.html#pinn/classical.py">classical.py</a> and <a href="source.html#experiments/headline.py">headline.py</a>.</span></label>
+<label><input type="checkbox" id="r9b"><span><b>Do.</b> Compute the noise floor yourself.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -c "from pinn import classical; from pinn.data import *; from pinn.physics import Oscillator as O; o=O(); print(classical.expected_future_mse(o, measure(o), future_grid()))"</pre></div>
+<p><b>Expect.</b> About 0.0000055.</p>
+<label><input type="checkbox" id="r9c"><span><b>Change.</b> Double the noise to 0.02 in that command with <code>measure(o, noise=0.02)</code>. Predict the new floor before running it.</span></label>
+<label><input type="checkbox" id="r9d"><span><b>Say.</b> Give three different answers to "how many times better is it?" and say what each one is worth.</span></label>
+</section>
+<section class="prose route" id="stop-10">
+<h3>Stop 10 &middot; 60 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">Break it</p>
+<label><input type="checkbox" id="r10a"><span><b>Read.</b> <a href="breaks.html">Chapter 8</a>, <a href="source.html#experiments/ablations.py">ablations.py</a> and <a href="source.html#experiments/frequency.py">frequency.py</a>.</span></label>
+<label><input type="checkbox" id="r10b"><span><b>Do.</b> Go through every row of the first table and predict the outcome before you click.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -m experiments.ablations activation</pre></div>
+<p><b>Expect.</b> ReLU is worse than the others by orders of magnitude.</p>
+<label><input type="checkbox" id="r10c"><span><b>Change.</b> Add a setting of your own to <code>variants()</code>, for example <code>("silu", ...)</code>, after adding SiLU to <code>ACTIVATIONS</code>. Predict first.</span></label>
+<label><input type="checkbox" id="r10d"><span><b>Say.</b> Why can the training loss be tiny while the answer is wrong? How do you detect it?</span></label>
+</section>
+<section class="prose route" id="stop-11">
+<h3>Stop 11 &middot; 45 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">Run it backwards</p>
+<label><input type="checkbox" id="r11a"><span><b>Read.</b> <a href="inverse.html">Chapter 9</a> and <a href="source.html#pinn/inverse.py">inverse.py</a>.</span></label>
+<label><input type="checkbox" id="r11b"><span><b>Do.</b> Recover c and k.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -c "from pinn.data import measure; from pinn.physics import Oscillator as O; from pinn.inverse import discover; r=discover(measure(O())); print(r.c, r.k)"</pre></div>
+<p><b>Expect.</b> Near 3 and 225. It takes a minute or two.</p>
+<label><input type="checkbox" id="r11c"><span><b>Change.</b> Start from <code>k_guess=20</code>. Does it still get there?</span></label>
+<label><input type="checkbox" id="r11d"><span><b>Say.</b> Why is c harder to find than k? Why can't m be found at all?</span></label>
+</section>
+<section class="prose route" id="stop-12">
+<h3>Stop 12 &middot; 90 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">By hand</p>
+<label><input type="checkbox" id="r12a"><span><b>Read.</b> <a href="byhand.html">Chapter 10</a> and <a href="source.html#pinn/scratch.py">scratch.py</a>, with paper.</span></label>
+<label><input type="checkbox" id="r12b"><span><b>Do.</b> Derive the three backward lines yourself, starting from "where was z used?".</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -m pytest tests/test_scratch.py -q
+node --test tests/engine.test.mjs</pre></div>
+<p><b>Expect.</b> All pass. The second command needs Node 20 or newer.</p>
+<label><input type="checkbox" id="r12c"><span><b>Change.</b> Change one sign in <code>backward</code> and see which tests notice. Undo it.</span></label>
+<label><input type="checkbox" id="r12d"><span><b>Say.</b> Why does training a second-order equation need the third derivative of tanh?</span></label>
+</section>
+<section class="prose route" id="stop-13">
+<h3>Stop 13 &middot; 45 min</h3>
+<p style="font-size:24px;line-height:1.3;margin-bottom:.5em">The whole thing, aloud</p>
+<label><input type="checkbox" id="r13a"><span><b>Read.</b> <a href="ledger.html">Chapter 11</a>, the <a href="log.html">build log</a> and <a href="questions.html">all the questions</a>.</span></label>
+<label><input type="checkbox" id="r13b"><span><b>Do.</b> Explain each commit in one sentence, in order.</span></label>
+<div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>git log --reverse --oneline</pre></div>
+<p><b>Expect.</b> You can say why each one came before the next.</p>
+<label><input type="checkbox" id="r13c"><span><b>Change.</b> Give the two-minute version: problem, idea, result, yardstick, failure, what you would do next.</span></label>
+<label><input type="checkbox" id="r13d"><span><b>Say.</b> What is the weakest part of this project? Have an answer ready.</span></label>
+</section>
+<div class="divider">Where to take it</div>
+<div class="prose">
+<p>Each of these is a small, real extension. Write the test first, then the code, then a paragraph for the guide.</p>
+<ol>
+<li><b>A nonlinear spring.</b> Add a <i>k<sub>3</sub>x&sup3;</i> term. The closed form is gone, so make the truth with Runge-Kutta. The least-squares shortcut no longer works, and the PINN changes by one line.</li>
+<li><b>Hard constraints.</b> If the start is known, let the curve be <i>x<sub>0</sub> + v<sub>0</sub>t + t&sup2; N(t)</i>. The start is then exact and one thing fewer has to be learned.</li>
+<li><b>Adaptive collocation.</b> Every 500 steps, move points to where the residual is largest. Try it on &omega; = 60.</li>
+<li><b>Error bars.</b> Train an ensemble of ten PINNs on resampled dots and plot the spread. Compare it with the covariance from <code>classical.py</code>.</li>
+<li><b>A driven spring.</b> Put a force on the right-hand side, then try to recover the force from the dots.</li>
+</ol>
+</div>

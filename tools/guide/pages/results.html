@@ -1,0 +1,41 @@
+title: What it scored, and against what
+short: Results
+hint: ten seeds
+lede: A ratio is only as good as its denominator. Here are three of them.
+---
+<div class="prose">
+<p>Ten seeds. Each has its own noise, so its own ten dots, and its own starting weights. Five methods answer the same question on each. The settings were fixed on other seeds beforehand.</p>
+</div>
+<figure class="fig" data-fig="curves">
+<!--fig-->
+<figcaption><b>After training</b> Switch seeds. The dashed true motion is drawn on top of the PINN, and at this scale they can't be told apart.</figcaption>
+</figure>
+<figure class="fig" data-fig="strip">
+<!--fig-->
+<figcaption><b>Every run</b> Each point is one seed, and the black tick is the median. Pick a row. The axis is logarithmic, so each grid line is a factor of 100.</figcaption>
+</figure>
+<div class="prose">
+<div class="tablewrap"><table>
+<thead><tr><th>Method</th><th class="num">Median</th><th class="num">Best</th><th class="num">Worst</th></tr></thead>
+<tbody>
+<tr><td>Plain net, Adam</td><td class="num">{{sci headline.median_mse.plain}}</td><td class="num">{{sci headline.min.plain}}</td><td class="num">{{sci headline.max.plain}}</td></tr>
+<tr><td>Plain net, Adam + L-BFGS</td><td class="num">{{sci headline.median_mse.plain_lbfgs}}</td><td class="num">{{sci headline.min.plain_lbfgs}}</td><td class="num">{{sci headline.max.plain_lbfgs}}</td></tr>
+<tr><td>Always zero</td><td class="num">{{sci headline.median_mse.zero}}</td><td class="num">same</td><td class="num">same</td></tr>
+<tr><td>PINN</td><td class="num">{{sci headline.median_mse.pinn}}</td><td class="num">{{sci headline.min.pinn}}</td><td class="num">{{sci headline.max.pinn}}</td></tr>
+<tr><td>Least squares</td><td class="num">{{sci headline.median_mse.classical}}</td><td class="num">{{sci headline.min.classical}}</td><td class="num">{{sci headline.max.classical}}</td></tr>
+</tbody></table></div>
+<h3>Three denominators</h3>
+<p><b>Against the plain net</b> the PINN's median error is about {{int headline.ratio_of_medians}} times lower. Taken seed by seed the factor runs from {{int headline.ratio_min}} to {{int headline.ratio_max}}. A number that moves that much is mostly a measurement of how wildly the plain net missed. Train the plain net with L-BFGS as well and the ratio of medians becomes {{int headline.ratio_lbfgs}}, with the PINN untouched.</p>
+<p><b>Against always zero</b> it is about {{int headline.vs_zero}} times lower. This denominator is a property of the spring and can't be made worse by training it badly, so it is the fairer headline.</p>
+<p><b>Against least squares</b> the PINN's median is {{fix1 headline.vs_floor}} times <i>higher</i>. This is the number that says how good the PINN is. Least squares uses the same dots and the same equation and is the best that can be done with them.</p>
+<h3>The noise floor</h3>
+<p>With m, c and k known, the curve is <i>a&thinsp;u(t) + b&thinsp;w(t)</i>, where <i>u</i> and <i>w</i> are the decaying cosine and sine. Put them in two columns of a matrix <i>B</i>, one row for each dot. The best estimate of <i>(a, b)</i> is least squares, and noise of variance &sigma;&sup2; gives it the covariance</p>
+<div class="eq">Cov(a, b) = &sigma;&sup2; (B<sup>T</sup>B)<sup>&minus;1</sup></div>
+<p>Push that through the same columns evaluated at future times and average. The result is {{sci headline.noise_floor}}. A <a class="srclink" href="source.html#tests/test_classical.py@def test_predicted_error_matches_simulated_error">test</a> simulates 2,000 noisy data sets and checks that the formula agrees. The <b>Gauss-Markov theorem</b> says no linear unbiased method does better on average.</p>
+<p>The floor is an average over noise, so single seeds land on both sides of it. On some seeds the PINN even beats least squares. That is luck in the noise: no method can beat it on average.</p>
+<p>The lowest points in the figure also say something about the claim. The PINN can't be a thousand times better than this, however it is trained, because the dots don't contain the information. With noise this size, the remaining error belongs to the measurements.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">How much better is the PINN?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>About {{int headline.vs_zero}} times better than predicting nothing, and within a factor of {{fix1 headline.vs_floor}} of the best method possible. The ratio to the plain net is larger and means less, because the plain net's error is nearly arbitrary. If someone quotes only that ratio, ask how the baseline was trained.</p></div></div>
+</div>

@@ -1,0 +1,39 @@
+title: Two optimisers, one of them optional
+short: Training
+hint: two optimisers
+lede: The physics term makes the loss badly scaled. Curvature fixes that, and the textbook warm-up turned out not to matter here.
+---
+<div class="prose">
+<p>Training a PINN is harder than training the same network on data. The residual contains second derivatives, and differentiating twice multiplies a wiggle of frequency &omega; by &omega;&sup2;. Some directions in weight space change the loss enormously and others hardly at all. A loss surface like this, steep one way and flat the other, is called <b>ill-conditioned</b>.</p>
+</div>
+<figure class="fig" data-fig="history">
+<!--fig-->
+<figcaption><b>One training run</b> Scrub through it. Look at what each term does in the first few hundred evaluations, and at the drop when the optimiser changes.</figcaption>
+</figure>
+<div class="prose">
+<h3>Adam</h3>
+<p>Adam keeps a running average of each gradient and of its square, and steps by their ratio. Every parameter then moves by a similar amount, whatever the size of its gradient, which makes Adam forgiving at the start. The <a class="srclink" href="source.html#pinn/train.py@CosineAnnealingLR">cosine schedule</a> shrinks the step from 3 &times; 10<sup>&minus;3</sup> to a thirtieth of that, so it can settle.</p>
+<p>The first thing it finds is the lazy solution. A curve near zero satisfies the equation, and only the ten dots object. The dots then pull up the left end of the curve, and the bend has to go somewhere. It spreads to the right, since the equation won't let a spring that is moving at 0.3 seconds be still at 0.4. In the live figure on <a href="index.html">the cover</a> you can watch the wave travel out of the data.</p>
+<h3>L-BFGS</h3>
+<p>Newton's method divides the gradient by the curvature and jumps towards the bottom of a valley. The full curvature matrix for 2,209 weights has almost five million entries. <b>L-BFGS</b> estimates its effect from the last 50 changes in position and gradient. The usual advice is that it is unreliable far from a minimum and very good near one, so it goes second. <a class="srclink" href="source.html#pinn/train.py@lbfgs = torch.optim.LBFGS">the settings</a></p>
+<p>Its line search evaluates the loss several times within one step, which is why PyTorch wants a <a class="srclink" href="source.html#pinn/train.py@def closure">closure</a>: a function that recomputes the loss and gradients on demand. It also needs the loss to be the same function each time. The collocation points are therefore fixed, with no random batches.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Optimiser</th><th class="num">Future error</th><th class="num">Physics loss</th><th class="num">Seconds</th></tr></thead>
+<tbody>
+<tr><td>Adam, 3,000 steps</td><td class="num">{{sci optimiser.adam 3000.mse}}</td><td class="num">{{sci optimiser.adam 3000.physics_loss}}</td><td class="num">{{fix0 optimiser.adam 3000.seconds}}</td></tr>
+<tr><td>Adam, 6,000 steps</td><td class="num">{{sci optimiser.adam 6000.mse}}</td><td class="num">{{sci optimiser.adam 6000.physics_loss}}</td><td class="num">{{fix0 optimiser.adam 6000.seconds}}</td></tr>
+<tr><td>Adam, 3,000 + L-BFGS</td><td class="num">{{sci optimiser.adam 3000 + lbfgs.mse}}</td><td class="num">{{sci optimiser.adam 3000 + lbfgs.physics_loss}}</td><td class="num">{{fix0 optimiser.adam 3000 + lbfgs.seconds}}</td></tr>
+<tr><td>L-BFGS only</td><td class="num">{{sci optimiser.lbfgs only.mse}}</td><td class="num">{{sci optimiser.lbfgs only.physics_loss}}</td><td class="num">{{fix0 optimiser.lbfgs only.seconds}}</td></tr>
+</tbody></table></div>
+<p class="small">Medians of three seeds. Seconds are for one run while eight shared the processor.</p>
+<h3>The warm-up that wasn't needed</h3>
+<p>The table doesn't support the usual advice. L-BFGS from random weights ends at the same error as Adam followed by L-BFGS, on all three seeds, in less time. Adam alone also gets close if it runs for 6,000 steps. What matters on this problem is curvature information or patience, and either will do.</p>
+<p>The recipe with the warm-up was fixed before this table existed, so the other experiments use it. It costs time and changes no conclusion. On harder problems, with rougher loss surfaces, the warm-up may earn its place, and nothing here tests that.</p>
+<h3>Where it stops</h3>
+<p>In the recorded run, L-BFGS lowers the physics loss about a hundredfold in its first few hundred evaluations and then goes flat. It hasn't failed. The curve that best fits ten noisy dots is slightly different from any exact spring, and the minimum of the weighted sum is a compromise between the two. Raising &lambda; moves the compromise towards the spring.</p>
+<p>Most of the 3,000 L-BFGS iterations in the settings are therefore spent on almost nothing. A stopping rule on the relative change of the loss would cut the training time by more than half at no cost in accuracy. It is left out so that every experiment uses the same simple recipe.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">Why are PINNs hard to train?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>The residual contains derivatives, which magnify fast features, so the loss is ill-conditioned: very steep in some directions and nearly flat in others. The data and physics terms can also pull in different directions with very different strengths. And there is an attractive wrong answer, because zero satisfies a homogeneous equation. I scale the residual, use L-BFGS in double precision, and check the residual away from the training points. A warm-up with Adam is standard advice. I measured it, and on this problem it made no difference.</p></div></div>
+</div>

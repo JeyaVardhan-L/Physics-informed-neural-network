@@ -1,0 +1,33 @@
+title: A network that knows nothing
+short: The network
+hint: the plain net
+lede: One number in, one number out, 2,209 weights between them, and no idea what a spring is.
+---
+<div class="prose">
+<p>The model is a <b>multilayer perceptron</b>: time goes in, position comes out, and between them are three hidden layers of 32 neurons. Each layer multiplies by a matrix, adds a bias and applies <code>tanh</code>. That gives 64 + 1,056 + 1,056 + 33 = 2,209 trainable numbers. <a class="srclink" href="source.html#pinn/network.py@class MLP">the class</a></p>
+<p>The useful way to think of it here is as a <b>function</b>: a smooth curve with 2,209 knobs, defined at every real <i>t</i>, including times where there is no data.</p>
+</div>
+<figure class="fig" data-fig="neuron">
+<!--fig-->
+<figcaption><b>One neuron is one bend</b> Move the sliders, then add neurons. Look at the ends of the curve: once the last bend is over, it goes flat.</figcaption>
+</figure>
+<div class="prose">
+<h3>Three choices in the code</h3>
+<p><b>Time is rescaled to [&minus;1, 1].</b> tanh is most curved near zero. Feeding in raw seconds from 0 to 1 would put every input on one side. The rescaling happens <a class="srclink" href="source.html#pinn/network.py@s = 2 * (t">inside forward</a>, so autograd sees it, the chain rule includes the factor of 2, and derivatives come out per second.</p>
+<p><b>Everything is float64.</b> Second derivatives magnify rounding error, and the optimiser used later compares losses that differ only in the seventh digit, which is where float32 runs out.</p>
+<p><b>The seed is private.</b> Each network draws its weights from its own generator, so the plain net and the PINN with the same seed start out identical. The first version failed its test: <code>nn.Linear</code> draws default weights from the global generator before they are overwritten. <code>skip_init</code> <a class="srclink" href="source.html#pinn/network.py@layer = nn.utils.skip_init">prevents that</a>.</p>
+<h3>The plain net</h3>
+<p>The baseline is trained on one thing, the mean squared distance to the ten dots. Adam runs for 3,000 steps. The data loss ends near {{sci headline.data_loss.plain}}, below the noise variance of 10<sup>&minus;4</sup>, so as a fit to the dots it is excellent.</p>
+</div>
+<figure class="fig" data-fig="plainseeds">
+<!--fig-->
+<figcaption><b>Same recipe, different seeds</b> Compare the seeds. Inside the window they agree to within the noise. After it they go their own ways.</figcaption>
+</figure>
+<div class="prose">
+<p>Over ten seeds the error after the dots ranges from {{sci headline.min.plain}} to {{sci headline.max.plain}}, with a median of {{sci headline.median_mse.plain}}. Always answering zero scores {{sci headline.median_mse.zero}}. All ten plain nets are worse than a constant.</p>
+<p>Training harder makes it worse. With L-BFGS switched on, the median rises to {{sci headline.median_mse.plain_lbfgs}}, because the extra effort goes into bending the curve through the noise. A small wiggle inside the window becomes a large one outside it.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">Isn't this just overfitting? Would more regularisation fix it?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>Overfitting the noise is part of it, and weight decay or early stopping could reduce that part. But even a perfect fit inside the window says nothing about the outside. Regularisation pulls the continuation towards something smooth and small, perhaps towards zero, and zero is still wrong. The missing ingredient is information about how the system moves, and regularisation doesn't contain any.</p></div></div>
+</div>

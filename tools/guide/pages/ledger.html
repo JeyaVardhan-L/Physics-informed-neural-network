@@ -1,0 +1,28 @@
+title: The ledger
+short: Ledger
+hint: fixed, gaps, risks
+lede: What went wrong, what is still missing, and what this project does not show.
+---
+<div class="ledger">
+<div><span class="lab fixed">Fixed</span><div><p><b>Building a network changed the global random state.</b> <code>nn.Linear</code> draws default weights that were then overwritten. The weights themselves were right, but every later random number depended on how many networks had been built before it. Found by a test, fixed with <code>skip_init</code>.</p></div></div>
+<div><span class="lab fixed">Fixed</span><div><p><b>Straight lines crashed the second derivative.</b> Their slope is a constant with no graph. The fix returns zeros.</p></div></div>
+<div><span class="lab fixed">Fixed</span><div><p><b>A loss of 10<sup>&minus;7</sup> on a wrong answer.</b> At four times the frequency the network obeyed the equation only at its 60 checkpoints. <code>dense_residual</code> now measures the same quantity at 2,000 times, and every recorded run includes it.</p></div></div>
+<div><span class="lab fixed">Fixed</span><div><p><b>A baseline that was too easy to beat.</b> L-BFGS makes the plain net worse, so the headline comparison uses the plain net without it, and adds two yardsticks that don't depend on training anything.</p></div></div>
+<div><span class="lab fixed">Checked</span><div><p><b>The Adam warm-up does nothing here.</b> The settings use Adam and then L-BFGS because that is the usual advice. The ablation shows L-BFGS alone does as well on all three seeds. Chapter 6 says so.</p></div></div>
+<div><span class="lab risk">Risk</span><div><p><b>The fix for straight lines can hide a bug.</b> If someone removes <code>create_graph=True</code>, the velocity loses its graph, the guard returns zeros for x&Prime;, and nothing crashes. The tests catch it. A user of the function without the tests would not.</p></div></div>
+<div><span class="lab risk">Risk</span><div><p><b>Three seeds in the ablations.</b> That is enough to see effects of a factor of ten and too few to rank settings that are close. The headline uses ten.</p></div></div>
+<div><span class="lab risk">Risk</span><div><p><b>Floating point differs between machines.</b> The same seed gives the same result on one machine with one PyTorch version. Across versions the last digits change, training is sensitive to them, and individual errors move. The medians should not move much.</p></div></div>
+<div><span class="lab gap">Gap</span><div><p><b>One network, one solution.</b> Change the start or the stiffness and training begins again. Models that learn the map from inputs to solutions, such as DeepONet or Fourier neural operators, solve that different problem.</p></div></div>
+<div><span class="lab gap">Gap</span><div><p><b>No error bars.</b> The PINN gives a curve and no measure of its own uncertainty. Least squares gives a covariance for free.</p></div></div>
+<div><span class="lab gap">Gap</span><div><p><b>A linear ODE is the easy case.</b> One dimension, smooth, with a formula. Nothing here shows that the method works for turbulence or shocks, where PINNs are known to have trouble.</p></div></div>
+<div><span class="lab gap">Gap</span><div><p><b>It is slow.</b> About {{fix0 headline.seconds.pinn}} seconds for one PINN, with eight runs sharing a laptop processor. Least squares takes microseconds. A Runge-Kutta solver, given the start, takes milliseconds.</p></div></div>
+</div>
+<div class="prose">
+<h3>Credit where it is due</h3>
+<p>The idea of training a network to satisfy a differential equation goes back to Lagaris, Likas and Fotiadis (1998, <i>IEEE Transactions on Neural Networks</i>). The name and the modern form, with automatic differentiation, are from Raissi, Perdikaris and Karniadakis (2019, <i>Journal of Computational Physics</i>). Ben Moseley's tutorial on the damped harmonic oscillator made this example well known. The difficulty of training is analysed by Krishnapriyan and others (2021, <i>NeurIPS</i>) and by Wang, Teng and Perdikaris (2021, <i>SIAM Journal on Scientific Computing</i>). The failure in chapter 8 is an instance of what they describe.</p>
+<p>The method is theirs. This repository adds an implementation checked against a hand derivation, a yardstick from classical statistics, and a set of measured failures.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">What is the weakest part of this project?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>The problem is easy. A linear ODE with known coefficients has a formula, and least squares beats the PINN in both time and accuracy. I chose it because it can be checked completely: exact truth, exact noise floor, hand-derived gradients. The honest next step is a nonlinear spring, where the formula disappears and the PINN has to stand on its own.</p></div></div>
+</div>

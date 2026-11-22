@@ -1,0 +1,44 @@
+title: How it breaks
+short: Failures
+hint: one change at a time
+lede: Remove a part, measure the damage, and find the failure that looks like success.
+---
+<div class="prose">
+<p>An <b>ablation</b> changes one thing and keeps the rest. The figure has five groups of them, three seeds for each setting. The last two columns matter most: the physics loss that training reports, and the same quantity measured at 2,000 times.</p>
+</div>
+<figure class="fig" data-fig="breaks">
+<!--fig-->
+<figcaption><b>Pick a row</b> Choose a group, then click through its rows. Predict the curve before you look at it. Columns are medians of three seeds and the curve is seed 0.</figcaption>
+</figure>
+<div class="prose">
+<h3>What each group says</h3>
+<p><b>Activation.</b> ReLU has no second derivative, so it is trained on <i>c x&prime; + k x = 0</i>, collapses to zero and gets {{sci activation.relu.mse}}. tanh gets {{sci activation.tanh.mse}}, sine {{sci activation.sin.mse}} and softplus {{sci activation.softplus.mse}}.</p>
+<p><b>Points checked.</b> With 12 collocation points the error is {{sci collocation.12.mse}}, no better than always answering zero. With 20 it is {{sci collocation.20.mse}}. One swing lasts 0.42 seconds, so that is the difference between about five checks per swing and about eight.</p>
+<p><b>Noise in the dots.</b> With perfect dots the error is {{sci noise.0.0.mse}}. At a noise of 0.1, ten times the usual, it is {{sci noise.0.1.mse}}, and least squares gets {{sci noise.0.1.classical}}. Across the whole range the PINN stays within about a third of least squares.</p>
+<p><b>Equation told.</b> If the loss is given a stiffness 5% too high, the error is {{sci wrong_physics.k 5% high.mse}}. At 20% it is {{sci wrong_physics.k 20% high.mse}}, and with friction left out {{sci wrong_physics.no friction.mse}}. The PINN follows the law it was given. The data loss gives it away: {{sci wrong_physics.right.data_loss}} with the right law, {{sci wrong_physics.k 5% high.data_loss}} and {{sci wrong_physics.k 20% high.data_loss}} with the wrong stiffness, against a noise variance of 10<sup>&minus;4</sup>.</p>
+<h3>The failure that looks like success</h3>
+<p>Now make the spring stiffer. &omega;<sub>0</sub> = 30 is twice as fast as before and 60 is four times. The equation given to the network is exactly right.</p>
+</div>
+<figure class="fig" data-fig="frequency">
+<!--fig-->
+<figcaption><b>A loss that lies</b> Go to &omega; 60 with 60 points and compare the first two numbers. Then try each fix.</figcaption>
+</figure>
+<div class="prose">
+<p>At &omega; = 60 with 60 points, training ends with a physics loss of {{sci frequency.omega 60, 60 points.physics_loss}}, as good as any success in this guide. The error after the dots is {{sci frequency.omega 60, 60 points.mse}}, about the same as answering zero. Measured at 2,000 times, the physics loss is {{sci frequency.omega 60, 60 points.dense_residual}}.</p>
+<p>The network has found a loophole. It follows the dots, then drops to zero, where the equation is satisfied for free. Getting from one to the other breaks the equation badly, but only for an instant, and it arranges for that instant to fall <b>between</b> two collocation points. Nothing in the loss can see it.</p>
+<h3>Two causes, two fixes</h3>
+<p><b>More points.</b> With 240 points the loophole is closed. The training loss and the dense loss agree, at {{sci frequency.omega 60, 240 points.physics_loss}} and {{sci frequency.omega 60, 240 points.dense_residual}}. The error is still {{sci frequency.omega 60, 240 points.mse}}. The loss is now honest, and it honestly reports that training has not succeeded.</p>
+<p><b>Faster features.</b> The rest is <b>spectral bias</b>: gradient descent on a tanh network learns slow variation first and fast variation slowly. A sine activation with the input scaled by 4 starts with faster wiggles available. Together with 240 points the error falls to {{sci frequency.omega 60, 240 points, sin x4.mse}}.</p>
+<p>The faster features with the original 60 points give {{sci frequency.omega 60, 60 points, sin x4.mse}}, much better than tanh, with a training loss close to its dense value. A network that can produce the real solution has less reason to cheat. One seed was still poor with either number of points, so this is an improvement and not a cure.</p>
+<h3>Rules that follow</h3>
+<ul>
+<li>Never report a physics loss measured only at the training points. Measure it on a dense grid as well.</li>
+<li>Count collocation points per oscillation. In these runs, about five or six were too few and about eight or more worked for the slow spring.</li>
+<li>If the data loss settles well above the noise variance, suspect the equation.</li>
+<li>If the curve goes to zero, suspect the trivial solution.</li>
+</ul>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">Tell me about a time a low loss was misleading.</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>On a spring with four times the frequency, the PINN reported a physics loss of {{sci frequency.omega 60, 60 points.physics_loss}} and predicted that the spring simply stopped. Evaluating the residual on 2,000 points gave {{sci frequency.omega 60, 60 points.dense_residual}}. The network was satisfying the equation at the 60 collocation points and breaking it between them. More points made the loss honest, and sine features with a larger input scale made the problem learnable. Now every run records the dense residual.</p></div></div>
+</div>
