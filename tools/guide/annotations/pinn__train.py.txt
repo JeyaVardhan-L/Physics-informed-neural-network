@@ -1,0 +1,31 @@
+@title  Adam, then L-BFGS
+@group  Core
+@order  7
+
+== """Training
+Two optimisers with different strengths.
+
+== def fit
+It knows nothing about networks or springs. It takes tensors to train and a function that returns named loss terms. The plain net, the PINN and the inverse problem all use it.
+
+== def total
+The weighted sum, kept apart from the terms so that the log records each term unweighted.
+
+== adam = torch.optim.Adam
+Adam copes with a bad start: random weights, steep directions next to flat ones. The cosine schedule lowers the step size smoothly to 1/30 of its start, so it settles instead of bouncing.
+
+== for step in range(adam_steps)
+The gradient is cleared, the terms are computed, `backward()` fills the gradients and `step()` uses them. The log is written before the step, so row 0 is the untrained network.
+
+== if lbfgs_steps:
+L-BFGS is a quasi-Newton method. It keeps the last 50 changes in position and gradient and uses them to estimate curvature. `strong_wolfe` is a line search that only accepts steps that lower the loss enough.
+
+The tolerances are very tight. With the defaults it can stop early on losses this small.
+
+== def closure
+PyTorch's L-BFGS calls this many times inside a single `step()`, because the line search has to try several points.
+
+It is full batch on purpose. If the loss changed randomly between calls, the curvature estimate would be noise.
+
+== lbfgs.step(closure)
+One call runs up to `lbfgs_steps` iterations. The log row after it is the final state.

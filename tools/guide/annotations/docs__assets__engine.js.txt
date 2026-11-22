@@ -1,0 +1,39 @@
+@title  The PINN that runs in the page
+@group  By hand
+@order  11
+
+== /* A PINN that trains
+A port of `pinn/scratch.py`. No libraries, so it can be read from top to bottom.
+
+== /* ---- physics
+The same formula as `pinn/physics.py`.
+
+== /* ---- small seeded
+JavaScript's `Math.random` can't be seeded. This small generator can, so "seed 1" means the same dots on every visit.
+
+== function linspace
+Named after NumPy's, with the same end points.
+
+== /* ---- the network
+Weights live in flat `Float64Array`s. Buffers are allocated once and reused, because allocating inside the training loop would keep the garbage collector busy.
+
+== /* One time in
+One sample at a time. NumPy works on the whole batch with matrix products, and here the loops are explicit. The arithmetic is identical.
+
+== /* Add this point's gradients
+The same three adjoints as in the NumPy version. `+=` accumulates over samples.
+
+== Net.prototype.zeroGrad
+Gradients accumulate, so they must be cleared before each evaluation.
+
+== /* mean((x - dots)^2)
+With `weight = 0` the second half is skipped and this is the plain net.
+
+== /* ---- Adam
+The same update as `scratch.py`.
+
+== /* A training run
+`advance(n)` does a few steps and returns, so the page can draw a frame and stay responsive.
+
+== var api =
+Works as a browser script and as a Node module, which is how the test loads it.

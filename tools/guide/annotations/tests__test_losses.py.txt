@@ -1,0 +1,21 @@
+@title  Do the losses measure what they claim?
+@group  Tests
+@order  33
+
+== import torch
+The exact solution, written in torch so autograd can differentiate it.
+
+== def test_true_motion_has_no_residual
+The residual of the truth should be zero up to rounding.
+
+== def test_wrong_stiffness
+A 10% error in k must be visible. A loss that can't see wrong physics is useless.
+
+== def test_flat_zero
+The equation alone can't choose a solution.
+
+== def test_residual_is_scaled
+For x = 1 the derivatives vanish and k/k = 1 remains.
+
+== def test_data_loss
+Shift the target by 0.5 and the mean square must be 0.25.

@@ -1,0 +1,15 @@
+@title  Ten noisy measurements and the scoring window
+@group  Core
+@order  2
+
+== """Ten noisy measurements
+The four constants are the experiment. `T_DATA` is the wall: data on the left, questions on the right.
+
+== @dataclass(frozen=True)
+The seed and the noise level travel with the data, so a result can always say which dots it was trained on.
+
+== def measure
+`default_rng(seed)` is a private random generator. Calling this can't disturb the random state of anything else, and the same seed always gives the same dots.
+
+== def future_grid
+`linspace(start, stop, n + 1)[1:]` drops the first point, so the grid starts just after the last dot. A dot at exactly 0.3 would otherwise be both training and test.

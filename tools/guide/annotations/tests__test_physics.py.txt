@@ -1,0 +1,24 @@
+@title  Is the reference curve right?
+@group  Tests
+@order  30
+
+== import numpy as np
+Everything rests on this file.
+
+== def central
+A central difference. Its error shrinks with h², and it shares no code with the formulas being checked.
+
+== def test_starts_where_it_should
+Uses a non-zero starting velocity, because v0 = 0 hides mistakes in `b`.
+
+== def test_velocity_is
+Velocity must be the slope of position.
+
+== def test_closed_form_satisfies_the_equation
+`acceleration` comes from the ODE and the right-hand side comes from the formula. They agree only if the formula solves the ODE.
+
+== def test_energy_never_rises
+Physics the formula was never told about. If it holds, the formula is very likely right.
+
+== def test_overdamped_is_refused
+An error now is better than `nan` later.

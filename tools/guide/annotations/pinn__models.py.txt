@@ -1,0 +1,27 @@
+@title  The plain net and the PINN
+@group  Core
+@order  8
+
+== """The two contestants
+Read the two training functions next to each other. The difference is one entry in a dictionary.
+
+== @dataclass
+A trained network and its log. `predict` hides tensors and `no_grad` from everything outside.
+
+== def train_plain
+`lbfgs_steps=0` by default. This gives the baseline its better score, because L-BFGS makes it worse.
+
+== def train_pinn
+The defaults are the settings chosen on seeds 100 to 102: 60 collocation points, weight 10, Adam then L-BFGS.
+
+== net = MLP(
+The same class and the same seed as the plain net.
+
+== t, x = column(data.t), column(data.x)
+Collocation times cover `t_physics`, which is the full second unless an experiment says otherwise. They are fixed, so L-BFGS sees a loss that doesn't change between calls.
+
+== def dense_residual
+The audit. Training sees the residual at 60 times. This looks at 2,000. A large gap means the network is cheating between the points.
+
+== def future_mse
+The score used for every method. It takes a function from times to positions, so it can score a network, a formula or `lambda t: 0 * t`.

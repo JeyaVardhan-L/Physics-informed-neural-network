@@ -1,0 +1,30 @@
+@title  The multilayer perceptron
+@group  Core
+@order  4
+
+== """The network
+The same class builds both the plain net and the PINN. Same seed, same weights. The comparison is then about the loss and nothing else.
+
+== class Sine
+PyTorch has no sine activation module, so here is one.
+
+== class MLP
+`input_scale` is 1 everywhere except in the frequency experiment.
+
+== generator = torch.Generator()
+A generator that belongs to this network. `torch.manual_seed` would work too, and would also reset the randomness of everything else in the program.
+
+== layers, size_in = [], 1
+Linear, activation, linear, activation, ..., and a last linear layer with no activation, so the output can be any real number.
+
+== @staticmethod
+`skip_init` creates the layer without drawing its default weights. Xavier initialisation then picks a range that keeps the size of signals about the same from layer to layer, which suits tanh.
+
+== def forward
+Seconds in, position out. The rescaling is part of the function being differentiated, so `x'` comes out per second.
+
+== def n_parameters
+Used by a test: 2,209 for the default size.
+
+== def column
+Networks take one row per sample. This turns a list of N times into an N by 1 tensor in float64.

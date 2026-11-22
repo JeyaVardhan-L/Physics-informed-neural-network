@@ -1,0 +1,18 @@
+@title  Are x' and x'' right?
+@group  Tests
+@order  32
+
+== import torch
+Four angles on one short function.
+
+== def test_known_function
+A function whose derivatives anyone can check by eye.
+
+== def test_network_against_finite_differences
+A real network, compared with a method that shares no code. The tolerances are loose because finite differences are.
+
+== def test_second_derivative_still_reaches_the_weights
+This is what `create_graph=True` is for. Remove it and this test fails.
+
+== def test_relu_has_no_second_derivative
+A trap, recorded as a fact.

@@ -1,0 +1,12 @@
+@title  When the training loss lies
+@group  Experiments
+@order  23
+
+== """A faster spring
+Only the stiffness changes: 225, 900, 3600. The frequency doubles each time.
+
+== VARIANTS =
+The last three settings separate two possible fixes: more places where the equation is checked, and a network that starts out with faster wiggles.
+
+== if __name__
+Believed and true physics are the same here. Nothing is wrong with the equation, only with how often it is checked.

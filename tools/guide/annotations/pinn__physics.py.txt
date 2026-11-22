@@ -1,0 +1,34 @@
+@title  The damped oscillator and its exact solution
+@group  Core
+@order  1
+
+== """The physical system
+The whole project is about one equation. This file is the only place that knows its exact solution, and no network ever imports the solution for training.
+
+== @dataclass(frozen=True)
+`frozen=True` makes an oscillator a value. Nothing can change its stiffness halfway through an experiment.
+
+`c = 3` and `k = 225` give a damping ratio of 0.1 and about two and a half swings in a second.
+
+== def __post_init__
+Bad parameters fail here, at construction. Without the `zeta` check, `omega_d` would be the square root of a negative number and everything after it would be `nan`.
+
+== def omega0
+Four numbers that describe the motion. *omega0* is the frequency with no friction, *delta* the decay rate, *zeta* their ratio, *omega_d* the frequency you would actually measure.
+
+They are properties, computed from m, c and k each time, so they can't get out of step.
+
+== def position
+The underdamped solution: a decaying exponential times a rotation.
+
+== def velocity
+The product rule applied to `position`. Collect the cosine terms and the sine terms separately.
+
+== def acceleration
+Defined from the ODE and not from the formula. That makes the test meaningful: if `position` were not a solution, the numerical slope of `velocity` would disagree with this.
+
+== def energy
+Kinetic plus spring energy. Friction can only remove it, so a test checks that it never rises.
+
+== def _coefficients
+`b` has the extra `delta * x0`. Leave it out and `velocity(0)` is *minus delta* when it should be 0: the mass would start with a small downward kick.

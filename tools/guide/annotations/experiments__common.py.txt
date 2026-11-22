@@ -1,0 +1,24 @@
+@title  Parallel runs and saved results
+@group  Experiments
+@order  20
+
+== """Shared plumbing
+Every number in the guide comes out of a JSON file written by `save`.
+
+== RESULTS =
+The seeds used for tuning and the seeds used for reporting don't overlap.
+
+== def curve
+Predictions on a fixed grid, rounded, for the figures.
+
+== def run
+One process per run. Futures are collected in order, so the rows come out in the same order every time.
+
+== def _single_thread
+Eight processes with twelve threads each would spend their time fighting over the same cores. The tensors are far too small to benefit.
+
+== def save
+Newlines are fixed to `\n`, so the files are the same on Windows and Linux.
+
+== def median
+Median, because the errors span several orders of magnitude and a mean would report only the worst seed.

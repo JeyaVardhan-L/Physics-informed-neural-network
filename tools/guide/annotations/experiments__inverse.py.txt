@@ -1,0 +1,12 @@
+@title  Recovering c and k
+@group  Experiments
+@order  24
+
+== """Recover c and k
+Three noise levels, three seeds each.
+
+== def job
+The error is still scored against the true curve, so it can be compared with the forward problem.
+
+== if __name__
+The spread over seeds is a rough error bar for each estimate.

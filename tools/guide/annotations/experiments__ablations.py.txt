@@ -1,0 +1,15 @@
+@title  Change one thing at a time
+@group  Experiments
+@order  22
+
+== """Change one thing
+An *ablation* removes or changes one part and measures what was lost.
+
+== def job
+`believed` is the physics the loss is told, and `osc` is the physics that made the dots. Keeping them apart is what makes the wrong-physics experiment possible.
+
+== def variants
+A table of settings. Each entry is a label, the options for `train_pinn`, the noise and the believed physics.
+
+== if __name__
+Three seeds per setting. That is enough to see large effects and too few to rank close ones.

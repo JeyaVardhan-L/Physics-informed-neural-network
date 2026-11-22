@@ -1,0 +1,41 @@
+@title  The PINN in NumPy, gradients by hand
+@group  By hand
+@order  10
+
+== """The same PINN
+Chapter 10 derives every line of this file.
+
+== def tanh_and_derivatives
+Each derivative is written in terms of the ones before it. The third is needed only on the way back.
+
+== class ScratchMLP
+Weights are stored the way PyTorch stores them, outputs by inputs, so a test can copy them across.
+
+== def forward
+The three inputs: scaled time, its slope 2/T, and its second derivative, which is zero.
+
+== cache, last = [], len(self.W) - 1
+The bias appears once. `W` appears three times, which is why its gradient will have three terms.
+
+The last layer is linear, so it skips the activation.
+
+== def backward
+`g`, `g1` and `g2` are the loss's derivatives with respect to this layer's three outputs. They have the same shapes as the outputs.
+
+== _, h1, h2, h3 = tanh_and_derivatives(z)
+Ask of each input: where was it used? `z2` in one place, `z1` in two, `z` in three. Each use contributes one term.
+
+== dW[i] = gz.T @ a
+Three uses of `W`, three outer products. `@` sums over the batch at the same time.
+
+== def loss_and_grads
+Two passes, one for the dots and one for the collocation points. Gradients add, so the results are added at the end.
+
+== # Physics term
+The chain rule through the residual: dr/dx = 1, dr/dx' = c/k and dr/dx'' = m/k. These three numbers are the only place where physics enters the gradient.
+
+== class Adam
+A running mean of the gradient and of its square. The step is their ratio, so its size depends little on the scale of the gradient. The hats correct for both averages starting at zero.
+
+== def train(
+The same cosine schedule as the PyTorch version. No L-BFGS here.

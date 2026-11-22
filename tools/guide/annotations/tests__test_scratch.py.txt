@@ -1,0 +1,21 @@
+@title  Hand-written gradients against autograd
+@group  Tests
+@order  34
+
+== """The hand-written
+The test that makes chapter 10 believable.
+
+== def twins
+Copy PyTorch's weights into the NumPy network, so both compute the same function.
+
+== def test_tanh_derivatives
+Each derivative is the slope of the one before it.
+
+== def test_forward_matches_autograd
+x, x' and x'' from forward propagation against two reverse passes of autograd.
+
+== def test_every_weight_gradient
+Eight arrays, every entry, to a relative tolerance of 1e-9.
+
+== def test_adam_matches
+Five steps with a fixed gradient. The bias correction is the part that is easy to get wrong.

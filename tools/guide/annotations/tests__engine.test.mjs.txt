@@ -1,0 +1,18 @@
+@title  The browser engine against NumPy
+@group  Tests
+@order  35
+
+== // node --test
+No packages. Node's own test runner is enough.
+
+== function net()
+Load the weights that `tools/make_engine_fixture.py` wrote.
+
+== test("closed form
+Two implementations of the same formula, in two languages.
+
+== test("every gradient matches NumPy
+If this passes, the figures on the site train the same model as the Python code.
+
+== test("training lowers
+A smoke test: a full training run must end with a small error.

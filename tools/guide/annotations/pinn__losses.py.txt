@@ -1,0 +1,17 @@
+@title  Data loss and physics loss
+@group  Core
+@order  6
+
+== """The two terms
+Two short functions and a scaling decision.
+
+== def data_loss
+Ordinary mean squared error.
+
+== def residual
+Plug the network into the equation and return what is left over, one number per time.
+
+`m`, `c` and `k` are arguments. The inverse problem reuses the idea with `c` and `k` as trainable tensors.
+
+== def physics_loss
+Mean of the squared residual. It is zero when the curve solves the equation at every point given. "At every point given" is the fine print, and the frequency experiment is about that.

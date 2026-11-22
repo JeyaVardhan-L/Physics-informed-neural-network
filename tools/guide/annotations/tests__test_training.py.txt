@@ -1,0 +1,18 @@
+@title  Does training do its job?
+@group  Tests
+@order  33
+
+== import numpy as np
+End-to-end checks, kept short enough to run on every push.
+
+== def test_training_lowers_the_loss
+The weakest claim a training loop has to meet.
+
+== def test_same_seed_same_result
+Bit for bit, on the same machine.
+
+== def test_scoring_the_truth
+A score that isn't zero for the right answer would make every comparison meaningless.
+
+== def test_physics_beats_no_physics
+A shortened version of the headline. The factor of 50 is far below the measured one, so ordinary variation won't break it.

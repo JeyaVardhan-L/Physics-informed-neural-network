@@ -1,0 +1,26 @@
+@title  Finding c and k from the dots
+@group  Core
+@order  9
+
+== """Run the equation backwards
+The forward problem knows the law and finds the curve. Here the form of the law is known and two of its numbers are not.
+
+The scaling remark is an *identifiability* argument. It is worth having ready, because it is true of any amount of data.
+
+== @dataclass
+A `Result` with two extra numbers and the path they took.
+
+== def discover
+The guesses are poor on purpose: c is off by a factor of 3 and k by more than 2.
+
+== # Train the logarithms
+A change of variable that enforces positivity with no constraints. It also fixes the scale: Adam moves every parameter by about the same amount per step, and c and k differ by a factor of 75.
+
+== def terms():
+The same two loss terms as always. `c` and `k` are now tensors with gradients, so `backward()` reaches them too.
+
+== r = (acc + c * vel + k * pos) / k_guess
+Divided by a fixed number. Dividing by the trainable `k` would change the exchange rate between the two loss terms while `k` is being searched for.
+
+== history = fit(
+The only change to the training call is two extra entries in the list of parameters.

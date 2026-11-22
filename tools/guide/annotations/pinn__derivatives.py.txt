@@ -1,0 +1,20 @@
+@title  Position, velocity and acceleration of a network
+@group  Core
+@order  5
+
+== """x, x' and x''
+The heart of the method. Everything else in a PINN is ordinary.
+
+== def derivatives
+`detach().clone()` takes a private copy of the times, so turning on `requires_grad` can't leak back to the caller.
+
+`x`, `v` and `a` all stay attached to the graph. The loss will need to send gradients back through each of them.
+
+== def _slope
+Added after a test failed. For a straight line, `v` is a constant with no graph, and asking autograd for its derivative raises `RuntimeError`.
+
+== # Each y[i] depends only
+The sum trick. The Jacobian of `y` with respect to `t` is diagonal, so multiplying it by a vector of ones gives the diagonal.
+
+== # create_graph=True keeps
+The second derivative of a ReLU net doesn't depend on `t` at all. Without `materialize_grads=True`, autograd returns an error for an unused input. With it, it returns the honest answer: zeros.

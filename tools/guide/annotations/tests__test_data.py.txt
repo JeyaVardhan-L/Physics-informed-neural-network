@@ -1,0 +1,18 @@
+@title  Are the dots honest?
+@group  Tests
+@order  31
+
+== import numpy as np
+Reproducibility and separation.
+
+== def test_same_seed_same_dots
+Same seed, same data. A different seed must give different data, or the first test could pass on a constant.
+
+== def test_every_dot_is_inside
+Every dot is on the left of the wall.
+
+== def test_scoring_times_never_touch_the_dots
+Every scoring time is on the right of it.
+
+== def test_noise_has_the_advertised_size
+Twenty thousand samples, so the estimate of the standard deviation is tight.

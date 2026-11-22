@@ -1,0 +1,17 @@
+@title  Least squares with the exact formula
+@group  Core
+@order  3
+
+== """What a physicist would do
+A comparison with only a weak opponent proves little. This is the strong one: the same dots and the same physics, solved exactly.
+
+== def basis
+One row per time, two columns: the decaying cosine and the decaying sine. Every solution of the equation is a mix of these two columns.
+
+== def fit
+Two unknowns, ten equations, linear. `lstsq` uses the SVD and takes microseconds.
+
+== def expected_future_mse
+How much error should be expected from this fit, averaged over the noise? Noise of variance s² in the dots gives the coefficients a covariance of s²(BᵀB)⁻¹. Multiplying by the basis at future times turns that into a variance of the prediction.
+
+The Gauss-Markov theorem says no linear unbiased estimator has a smaller variance. For Gaussian noise no unbiased estimator of any kind does.

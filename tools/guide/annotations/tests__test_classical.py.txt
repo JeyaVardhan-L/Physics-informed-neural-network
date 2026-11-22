@@ -1,0 +1,12 @@
+@title  Is the noise floor right?
+@group  Tests
+@order  30
+
+== import numpy as np
+The yardstick needs checking too.
+
+== def test_perfect_dots
+With no noise, two unknowns and ten equations, the answer must be exact.
+
+== def test_predicted_error_matches
+Two thousand noisy data sets, one fit each. Their average error should match the covariance formula. Within 10%, it does.

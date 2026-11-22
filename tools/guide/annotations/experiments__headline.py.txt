@@ -1,0 +1,15 @@
+@title  Five methods, ten seeds
+@group  Experiments
+@order  21
+
+== """Plain net against PINN
+The main result.
+
+== def job
+One method, one seed. Each seed gets its own noise and its own starting weights, so the spread covers both.
+
+== row = {"method"
+Full curves are saved only for seeds 0 to 2, which keeps the file small.
+
+== if __name__
+Two ratios are saved: the ratio of medians and the ratio for each seed. They answer different questions and they don't have to agree.
