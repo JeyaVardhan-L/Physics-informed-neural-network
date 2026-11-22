@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Running it backwards &middot; Ten Dots</title>
+<meta name="description" content="A physics-informed neural network sees ten noisy dots and predicts what comes next. Built from first principles, with every step shown.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8c2-9 4-9 6 0s4 6 8 0' fill='none' stroke='%232b4cf2' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><a class="brand" href="index.html">Ten Dots <span>/ field guide</span></a><nav aria-label="Site"><a href="index.html">Contents</a><a href="route.html">Route</a><a href="source.html">Source</a><a href="questions.html">Questions</a><a href="log.html">Build log</a></nav></header>
+<main id="main" class="page">
+<div class="divider">09 &middot; Inverse</div>
+<header class="chapter-head"><span class="num">Chapter 09</span><h1>Running it backwards</h1><p class="lede">The dots are known and the spring is not. The same loss finds both the curve and the constants.</p></header>
+<div class="prose">
+<p>So far the law was known completely. In practice the form of a law is often known while some number in it is not: a friction coefficient, a diffusion rate. Finding it from measurements is called an <b>inverse problem</b>.</p>
+<p>With a PINN it takes a few extra lines. Make <i>c</i> and <i>k</i> trainable and give them to the optimiser next to the weights. They appear inside the residual, so the gradient of the loss reaches them through the same backward pass. <a class="srclink" href="source.html#pinn/inverse.py@log_c = torch.tensor">the two parameters</a></p>
+</div>
+<figure class="fig" data-fig="inverse">
+<span class="fig-label">FIG_016</span>
+<div class="fig-body"></div>
+<figcaption><b>Two numbers on their way</b> The start is deliberately poor, k = 100 and c = 1. Compare noise levels, and compare how tightly the two numbers are pinned down.</figcaption>
+</figure>
+<div class="prose">
+<h3>Three decisions</h3>
+<p><b>Train the logarithms.</b> <i>c</i> and <i>k</i> must be positive, and <i>e</i> to any power is. Adam moves each parameter by roughly the learning rate per step, so on a logarithm a step is a relative change, about the same for <i>c</i> near 3 and <i>k</i> near 225.</p>
+<p><b>Scale by a constant.</b> The residual is divided by the first guess for <i>k</i>, which is fixed. Dividing by the trainable <i>k</i> would change the exchange rate between the two losses during the search.</p>
+<p><b>Leave m alone.</b> Multiply <i>m</i>, <i>c</i> and <i>k</i> by the same number and the equation is unchanged. Two springs that differ in this way move identically, so no amount of position data can tell them apart. Only the ratios <i>c/m</i> and <i>k/m</i> are <b>identifiable</b>. Finding <i>m</i> itself would take a measurement of force.</p>
+<h3>What was found</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Noise</th><th class="num">k, median (range)</th><th class="num">c, median (range)</th></tr></thead>
+<tbody>
+<tr><td>none</td><td class="num">225.0 (225.0 to 225.0)</td><td class="num">3.00 (3.00 to 3.00)</td></tr>
+<tr><td>0.01</td><td class="num">222.1 (221.8 to 225.3)</td><td class="num">3.10 (3.09 to 3.11)</td></tr>
+<tr><td>0.03</td><td class="num">216.1 (215.3 to 226.1)</td><td class="num">3.32 (3.26 to 3.32)</td></tr>
+<tr><td>true</td><td class="num">225</td><td class="num">3</td></tr>
+</tbody></table></div>
+<p>In relative terms <i>k</i> is far better determined than <i>c</i>. Stiffness sets the timing of the swing, and ten dots see timing well: the moment the mass passes the middle, the moment it turns. Friction shows only as a small loss of height over part of one swing, and noise can imitate that. Without noise both numbers come back to four digits, so the limit here is the data.</p>
+<p>With 1% noise the error after the dots is 2.7&nbsp;&times;&nbsp;10<sup>&minus;4</sup>, compared with 3.8&nbsp;&times;&nbsp;10<sup>&minus;6</sup> when c and k are given. Knowing the constants is worth that much.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">How does a PINN estimate an unknown coefficient?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>The coefficient becomes a trainable parameter inside the residual. The dots hold the curve in place, and if the coefficient is wrong, that curve can't satisfy the equation. The physics loss then has a gradient that pushes the coefficient towards a value that fits. I train its logarithm, so it stays positive. What can be recovered is limited by identifiability and by noise, and I would report the spread over seeds along with the estimate.</p></div></div>
+</div>
+
+<nav class="pager measure" aria-label="Chapters"><a href="breaks.html">&larr; 08 &middot; Failures</a><a href="byhand.html">10 &middot; By hand &rarr;</a></nav>
+</main>
+<footer class="foot"><span>Ten Dots / field guide</span><span><a href="https://github.com/JeyaVardhan-L/Physics-informed-neural-network">Repository</a><a href="index.html">Contents</a><a href="source.html">Source</a><a href="questions.html">Questions</a></span></footer>
+<script src="assets/site.js"></script>
+<script src="assets/engine.js"></script>
+<script src="assets/results-data.js"></script>
+<script src="assets/figkit.js"></script>
+<script src="assets/figures.js"></script>
+<script src="assets/figures-results.js"></script>
+</body>
+</html>

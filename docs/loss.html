@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Putting the law in the loss &middot; Ten Dots</title>
+<meta name="description" content="A physics-informed neural network sees ten noisy dots and predicts what comes next. Built from first principles, with every step shown.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8c2-9 4-9 6 0s4 6 8 0' fill='none' stroke='%232b4cf2' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><a class="brand" href="index.html">Ten Dots <span>/ field guide</span></a><nav aria-label="Site"><a href="index.html">Contents</a><a href="route.html">Route</a><a href="source.html">Source</a><a href="questions.html">Questions</a><a href="log.html">Build log</a></nav></header>
+<main id="main" class="page">
+<div class="divider">05 &middot; The loss</div>
+<header class="chapter-head"><span class="num">Chapter 05</span><h1>Putting the law in the loss</h1><p class="lede">Plug the network into the equation. Whatever is left over is the error.</p></header>
+<div class="prose">
+<p>If the network's curve were a true spring, then <i>m x&Prime; + c x&prime; + k x</i> would be zero at every time. It won't be, and what is left is called the <b>residual</b>. Square it, average it over some times, and it is a loss like any other.</p>
+<div class="eq">L = mean<sub>10 dots</sub> (x&#770;(t<sub>i</sub>) &minus; x<sub>i</sub>)&sup2; + &lambda; &middot; mean<sub>60 times</sub> r(t<sub>j</sub>)&sup2;</div>
+<div class="eq">r = (m x&#770;&Prime; + c x&#770;&prime; + k x&#770;) / k</div>
+<p>The 60 times are called <b>collocation points</b>. They are evenly spaced over the whole second and carry no measurements. Nobody needs to know the position there, because the residual is a statement about the network alone. Adding more of them costs computing time and no experiments.</p>
+</div>
+<figure class="fig" data-fig="residual">
+<span class="fig-label">FIG_008</span>
+<div class="fig-body"></div>
+<figcaption><b>Be the optimiser</b> Use the four sliders to make both losses small. Then try the presets: several of them satisfy the equation perfectly and miss the dots.</figcaption>
+</figure>
+<div class="prose">
+<h3>Neither term is enough</h3>
+<p>The equation alone has infinitely many solutions, one for each starting position and velocity. One of them is <i>x = 0</i>, which is also the easiest curve for a fresh network to produce. <a class="srclink" href="source.html#tests/test_losses.py@def test_flat_zero_also_satisfies_the_physics">A test</a> records that its physics loss is exactly zero.</p>
+<p>The dots alone have infinitely many continuations, as chapter 1 showed. Together they leave one. The equation narrows every possible curve to a family with two unknowns, and ten dots are more than enough for two unknowns.</p>
+<p>The network is never told the starting position or velocity. They are implied by the dots. The true curve never appears in the loss either: <a class="srclink" href="source.html#pinn/models.py@osc is used for m, c and k only">only m, c and k</a> are passed in.</p>
+<h3>Why divide by k</h3>
+<p>With <i>x</i> near 1 and <i>k</i> = 225, the raw residual is in newtons and reaches the hundreds, so its square reaches tens of thousands. The data term is a squared position, below 1. Added together, the dots would be invisible. Dividing by <i>k</i> turns a force into the equivalent displacement, so both terms start with the same units and a similar size. This is <b>nondimensionalisation</b> in its smallest form, and it is worth doing before touching &lambda;. <a class="srclink" href="source.html#pinn/losses.py@Dividing by k">the line</a></p>
+<h3>Where the equation is enforced</h3>
+<p>The residual is checked only at the collocation points. If those stop at 0.5 seconds, so does the physics.</p>
+</div>
+<figure class="fig" data-fig="coverage">
+<span class="fig-label">FIG_009</span>
+<div class="fig-body"></div>
+<figcaption><b>Cut the physics short</b> Move the limit from 0.3 to 1 second. The data and the network stay the same, and only the 60 ticks at the bottom move.</figcaption>
+</figure>
+<div class="prose">
+<p>With the equation only where the dots are, the error afterwards is 1.1. With the same 60 points spread over the full second it is 3.6&nbsp;&times;&nbsp;10<sup>&minus;6</sup>. This also limits the method: a PINN predicts as far as its collocation points reach. Asking this one about <i>t</i> = 2 would be extrapolation again, with all the trouble of chapter 1.</p>
+<h3>How loud is the equation?</h3>
+<p>&lambda; sets the exchange rate between the two terms. The noise in the dots has a variance of 10<sup>&minus;4</sup>, so a fit that is honest about noise should end with a data loss near 10<sup>&minus;4</sup>. Much lower means the curve is following noise.</p>
+</div>
+<figure class="fig" data-fig="weight">
+<span class="fig-label">FIG_010</span>
+<div class="fig-body"></div>
+<figcaption><b>Exchange rate</b> Step through &lambda; and watch the data loss against the noise variance.</figcaption>
+</figure>
+<div class="prose">
+<p>The value used everywhere, &lambda; = 10, was the best of 0.1, 1 and 10 on seeds 100 to 102, and the reported results use seeds 0 to 9. Choosing a setting on the same runs that are reported would make the results look better than they are.</p>
+<p>This sweep was run later, and &lambda; = 1000 does slightly better than 10: 2.8&nbsp;&times;&nbsp;10<sup>&minus;6</sup> against 3.6&nbsp;&times;&nbsp;10<sup>&minus;6</sup>. The setting stays at 10, because changing it now would mean tuning on the reported seeds. The direction makes sense. The equation is exactly true here, so there is no cost in trusting it more.</p>
+<p>There is a statistical reading. If the noise is Gaussian with variance &sigma;&sup2;, the data term weighted by 1/&sigma;&sup2; is a log-likelihood, and the physics term acts as a log-prior whose strength says how much the equation is trusted. Here the equation is exactly true, so a strong prior is right. If it were only approximately true, a large &lambda; would force the curve onto a wrong law, and <a href="breaks.html">chapter 8</a> measures that.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">How do you balance the data loss and the physics loss?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>First make the units comparable, here by dividing the residual by k. Then sweep the weight over powers of ten on seeds kept apart for tuning. Then sanity check: the data loss should settle near the noise variance. Far below it, the model is fitting noise and the physics is too quiet. Far above it, the physics is drowning the measurements or the equation is wrong. There are adaptive schemes that rescale the terms by their gradient sizes during training. This problem is small enough that a fixed weight works.</p></div></div>
+</div>
+
+<nav class="pager measure" aria-label="Chapters"><a href="derivatives.html">&larr; 04 &middot; Derivatives</a><a href="training.html">06 &middot; Training &rarr;</a></nav>
+</main>
+<footer class="foot"><span>Ten Dots / field guide</span><span><a href="https://github.com/JeyaVardhan-L/Physics-informed-neural-network">Repository</a><a href="index.html">Contents</a><a href="source.html">Source</a><a href="questions.html">Questions</a></span></footer>
+<script src="assets/site.js"></script>
+<script src="assets/engine.js"></script>
+<script src="assets/results-data.js"></script>
+<script src="assets/figkit.js"></script>
+<script src="assets/figures.js"></script>
+<script src="assets/figures-results.js"></script>
+</body>
+</html>

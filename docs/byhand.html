@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Every gradient by hand &middot; Ten Dots</title>
+<meta name="description" content="A physics-informed neural network sees ten noisy dots and predicts what comes next. Built from first principles, with every step shown.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8c2-9 4-9 6 0s4 6 8 0' fill='none' stroke='%232b4cf2' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><a class="brand" href="index.html">Ten Dots <span>/ field guide</span></a><nav aria-label="Site"><a href="index.html">Contents</a><a href="route.html">Route</a><a href="source.html">Source</a><a href="questions.html">Questions</a><a href="log.html">Build log</a></nav></header>
+<main id="main" class="page">
+<div class="divider">10 &middot; By hand</div>
+<header class="chapter-head"><span class="num">Chapter 10</span><h1>Every gradient by hand</h1><p class="lede">The same network in NumPy, with the derivatives of the derivatives worked out on paper.</p></header>
+<div class="prose">
+<p>Autograd is convenient enough to hide what it does. This chapter removes it. <a class="srclink" href="source.html#pinn/scratch.py@class ScratchMLP">pinn/scratch.py</a> trains the same kind of PINN with NumPy alone, and its gradients agree with PyTorch's to nine digits for every weight.</p>
+<h3>Forward: carry three numbers</h3>
+<p>Instead of passing a value <i>a</i> from layer to layer, pass <i>(a, a&prime;, a&Prime;)</i>: the value, its first time derivative and its second. Chapter 4 stepped through this with one neuron. In general there are two rules.</p>
+<p>A linear layer <i>z = W a + b</i> has constant coefficients, so it acts on each of the three in the same way. The bias is a constant and drops out of both derivatives:</p>
+<div class="eq">z = W a + b, &nbsp; z&prime; = W a&prime;, &nbsp; z&Prime; = W a&Prime;</div>
+<p>The activation <i>h = &sigma;(z)</i> needs the chain rule once, and then the chain and product rules together:</p>
+<div class="eq">h&prime; = &sigma;&prime;(z) z&prime;, &nbsp;&nbsp; h&Prime; = &sigma;&Prime;(z) z&prime;&sup2; + &sigma;&prime;(z) z&Prime;</div>
+<p>The first term of <i>h&Prime;</i> is the bend of the activation. The second is the bend that <i>z</i> brought with it. This is <b>forward-mode</b> differentiation to second order, also called Taylor mode. The cost is three passes' worth of multiplications, whatever the number of weights.</p>
+<h3>Backward: share the blame</h3>
+<p>Now the loss depends on <i>x</i>, <i>x&prime;</i> and <i>x&Prime;</i>. Write <i>g</i>, <i>g<sub>1</sub></i> and <i>g<sub>2</sub></i> for the derivative of the loss with respect to a layer's three outputs. For the residual <i>r = (m x&Prime; + c x&prime; + k x)/k</i> and the loss &lambda;&middot;mean(<i>r&sup2;</i>) over <i>N</i> points, they start as</p>
+<div class="eq">g = 2&lambda;r/N, &nbsp;&nbsp; g<sub>1</sub> = (c/k) g, &nbsp;&nbsp; g<sub>2</sub> = (m/k) g</div>
+<p>To go back through the activation, ask where each of <i>z</i>, <i>z&prime;</i> and <i>z&Prime;</i> was used. <i>z&Prime;</i> appears only in <i>h&Prime;</i>. <i>z&prime;</i> appears in <i>h&prime;</i> and in <i>h&Prime;</i>, squared. <i>z</i> appears in all three, inside &sigma;, &sigma;&prime; and &sigma;&Prime;:</p>
+<div class="eq">g<sub>z&Prime;</sub> = g<sub>2</sub> &sigma;&prime;</div>
+<div class="eq">g<sub>z&prime;</sub> = g<sub>1</sub> &sigma;&prime; + 2 g<sub>2</sub> &sigma;&Prime; z&prime;</div>
+<div class="eq">g<sub>z</sub> = g &sigma;&prime; + g<sub>1</sub> &sigma;&Prime; z&prime; + g<sub>2</sub> (&sigma;&#8244; z&prime;&sup2; + &sigma;&Prime; z&Prime;)</div>
+<p>The <b>third</b> derivative of tanh turns up in the last line. Training a second-order ODE needs &sigma;&#8244;, which is why activations that are smooth to only second order are a poor fit. For tanh, with <i>h</i> = tanh <i>z</i>:</p>
+<div class="eq">&sigma;&prime; = 1 &minus; h&sup2;, &nbsp; &sigma;&Prime; = &minus;2h&sigma;&prime;, &nbsp; &sigma;&#8244; = &minus;2&sigma;&prime;(1 &minus; 3h&sup2;)</div>
+<p>Through the linear layer, the weight matrix was used three times, so its gradient is a sum of three outer products. The bias was used once:</p>
+<div class="eq">dW = g<sub>z</sub> a<sup>T</sup> + g<sub>z&prime;</sub> a&prime;<sup>T</sup> + g<sub>z&Prime;</sub> a&Prime;<sup>T</sup>, &nbsp;&nbsp; db = g<sub>z</sub></div>
+<p>That is the whole algorithm. In code it is <a class="srclink" href="source.html#pinn/scratch.py@z appears in all three outputs">six lines</a> inside a loop.</p>
+<h3>Checking it</h3>
+<p>A wrong gradient rarely crashes. The network trains a little worse and nothing says why. So the derivation is checked three ways. Every weight's gradient is <a class="srclink" href="source.html#tests/test_scratch.py@def test_every_weight_gradient_matches_autograd">compared with autograd</a>. The JavaScript port is <a class="srclink" href="source.html#tests/engine.test.mjs@every gradient matches NumPy">compared with NumPy</a>. And the figure below compares it with finite differences while you watch.</p>
+</div>
+<figure class="fig" data-fig="gradcheck">
+<span class="fig-label">FIG_017</span>
+<div class="fig-body"></div>
+<figcaption><b>Gradient check</b> Move the step size and look for the valley. Too big and the loss curves away between the samples. Too small and subtraction eats the digits. Pick any weight in the network.</figcaption>
+</figure>
+<div class="prose">
+<p>The valley is the argument from chapter 4 in one picture. Even at its best step size, a central difference agrees with the exact gradient to only about nine or ten digits, and it costs two full loss evaluations for each weight. The hand-written pass gives all of them at once for roughly the price of one evaluation and its reverse.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">How would you compute PINN gradients without autograd?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>Propagate value, first and second time derivative forward through the layers together. Linear layers apply the same matrix to all three and the activation applies the chain rule. Then do a reverse pass with three adjoints, one for each. Each weight matrix was used three times, so its gradient is a sum of three outer products. The reverse pass through a tanh needs its third derivative. I would verify it against autograd and against central differences.</p></div></div>
+</div>
+
+<nav class="pager measure" aria-label="Chapters"><a href="inverse.html">&larr; 09 &middot; Inverse</a><a href="ledger.html">11 &middot; Ledger &rarr;</a></nav>
+</main>
+<footer class="foot"><span>Ten Dots / field guide</span><span><a href="https://github.com/JeyaVardhan-L/Physics-informed-neural-network">Repository</a><a href="index.html">Contents</a><a href="source.html">Source</a><a href="questions.html">Questions</a></span></footer>
+<script src="assets/site.js"></script>
+<script src="assets/engine.js"></script>
+<script src="assets/results-data.js"></script>
+<script src="assets/figkit.js"></script>
+<script src="assets/figures.js"></script>
+<script src="assets/figures-results.js"></script>
+</body>
+</html>

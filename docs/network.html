@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A network that knows nothing &middot; Ten Dots</title>
+<meta name="description" content="A physics-informed neural network sees ten noisy dots and predicts what comes next. Built from first principles, with every step shown.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8c2-9 4-9 6 0s4 6 8 0' fill='none' stroke='%232b4cf2' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><a class="brand" href="index.html">Ten Dots <span>/ field guide</span></a><nav aria-label="Site"><a href="index.html">Contents</a><a href="route.html">Route</a><a href="source.html">Source</a><a href="questions.html">Questions</a><a href="log.html">Build log</a></nav></header>
+<main id="main" class="page">
+<div class="divider">03 &middot; The network</div>
+<header class="chapter-head"><span class="num">Chapter 03</span><h1>A network that knows nothing</h1><p class="lede">One number in, one number out, 2,209 weights between them, and no idea what a spring is.</p></header>
+<div class="prose">
+<p>The model is a <b>multilayer perceptron</b>: time goes in, position comes out, and between them are three hidden layers of 32 neurons. Each layer multiplies by a matrix, adds a bias and applies <code>tanh</code>. That gives 64 + 1,056 + 1,056 + 33 = 2,209 trainable numbers. <a class="srclink" href="source.html#pinn/network.py@class MLP">the class</a></p>
+<p>The useful way to think of it here is as a <b>function</b>: a smooth curve with 2,209 knobs, defined at every real <i>t</i>, including times where there is no data.</p>
+</div>
+<figure class="fig" data-fig="neuron">
+<span class="fig-label">FIG_004</span>
+<div class="fig-body"></div>
+<figcaption><b>One neuron is one bend</b> Move the sliders, then add neurons. Look at the ends of the curve: once the last bend is over, it goes flat.</figcaption>
+</figure>
+<div class="prose">
+<h3>Three choices in the code</h3>
+<p><b>Time is rescaled to [&minus;1, 1].</b> tanh is most curved near zero. Feeding in raw seconds from 0 to 1 would put every input on one side. The rescaling happens <a class="srclink" href="source.html#pinn/network.py@s = 2 * (t">inside forward</a>, so autograd sees it, the chain rule includes the factor of 2, and derivatives come out per second.</p>
+<p><b>Everything is float64.</b> Second derivatives magnify rounding error, and the optimiser used later compares losses that differ only in the seventh digit, which is where float32 runs out.</p>
+<p><b>The seed is private.</b> Each network draws its weights from its own generator, so the plain net and the PINN with the same seed start out identical. The first version failed its test: <code>nn.Linear</code> draws default weights from the global generator before they are overwritten. <code>skip_init</code> <a class="srclink" href="source.html#pinn/network.py@layer = nn.utils.skip_init">prevents that</a>.</p>
+<h3>The plain net</h3>
+<p>The baseline is trained on one thing, the mean squared distance to the ten dots. Adam runs for 3,000 steps. The data loss ends near 3.3&nbsp;&times;&nbsp;10<sup>&minus;5</sup>, below the noise variance of 10<sup>&minus;4</sup>, so as a fit to the dots it is excellent.</p>
+</div>
+<figure class="fig" data-fig="plainseeds">
+<span class="fig-label">FIG_005</span>
+<div class="fig-body"></div>
+<figcaption><b>Same recipe, different seeds</b> Compare the seeds. Inside the window they agree to within the noise. After it they go their own ways.</figcaption>
+</figure>
+<div class="prose">
+<p>Over ten seeds the error after the dots ranges from 0.1 to 3.4, with a median of 1.6. Always answering zero scores 0.078. All ten plain nets are worse than a constant.</p>
+<p>Training harder makes it worse. With L-BFGS switched on, the median rises to 4.9, because the extra effort goes into bending the curve through the noise. A small wiggle inside the window becomes a large one outside it.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">Isn't this just overfitting? Would more regularisation fix it?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>Overfitting the noise is part of it, and weight decay or early stopping could reduce that part. But even a perfect fit inside the window says nothing about the outside. Regularisation pulls the continuation towards something smooth and small, perhaps towards zero, and zero is still wrong. The missing ingredient is information about how the system moves, and regularisation doesn't contain any.</p></div></div>
+</div>
+
+<nav class="pager measure" aria-label="Chapters"><a href="spring.html">&larr; 02 &middot; The spring</a><a href="derivatives.html">04 &middot; Derivatives &rarr;</a></nav>
+</main>
+<footer class="foot"><span>Ten Dots / field guide</span><span><a href="https://github.com/JeyaVardhan-L/Physics-informed-neural-network">Repository</a><a href="index.html">Contents</a><a href="source.html">Source</a><a href="questions.html">Questions</a></span></footer>
+<script src="assets/site.js"></script>
+<script src="assets/engine.js"></script>
+<script src="assets/results-data.js"></script>
+<script src="assets/figkit.js"></script>
+<script src="assets/figures.js"></script>
+<script src="assets/figures-results.js"></script>
+</body>
+</html>

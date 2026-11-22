@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ten dots &middot; Ten Dots</title>
+<meta name="description" content="A physics-informed neural network sees ten noisy dots and predicts what comes next. Built from first principles, with every step shown.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8c2-9 4-9 6 0s4 6 8 0' fill='none' stroke='%232b4cf2' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><a class="brand" href="index.html">Ten Dots <span>/ field guide</span></a><nav aria-label="Site"><a href="index.html">Contents</a><a href="route.html">Route</a><a href="source.html">Source</a><a href="questions.html">Questions</a><a href="log.html">Build log</a></nav></header>
+<main id="main" class="page">
+<div class="divider">01 &middot; Ten dots</div>
+<header class="chapter-head"><span class="num">Chapter 01</span><h1>Ten dots</h1><p class="lede">Many curves fit the same ten points. Choosing between them needs something the points do not contain.</p></header>
+<div class="prose">
+<p>The data is ten pairs of numbers: a time and a position. The times are evenly spaced from 0 to 0.3 seconds. The positions come from a real damped spring with Gaussian noise of standard deviation 0.01 added, about one percent of the starting height. <a class="srclink" href="source.html#pinn/data.py@def measure">making the dots</a></p>
+<p>The task is to predict the position from 0.3 to 1 second. This is <b>extrapolation</b>: answering outside the region the data covers. Interpolation, answering between the dots, is easy here and almost anything does it well.</p>
+</div>
+<figure class="fig" data-fig="manycurves">
+<span class="fig-label">FIG_001</span>
+<div class="fig-body"></div>
+<figcaption><b>Five ways to continue</b> Switch between the curves and compare the two errors. A small error on the dots says very little about the second number.</figcaption>
+</figure>
+<div class="prose">
+<h3>What the dots do not say</h3>
+<p>The ten dots pin down a curve inside their window. Outside it, infinitely many curves agree with all ten and disagree with each other. No amount of extra training can choose between them, because every one of them already has a good score.</p>
+<p>Something has to break the tie. A statistician calls it a <b>prior</b>, and an engineer calls it domain knowledge. Every model has one, including models that claim to have none. A polynomial prefers curves that run off to infinity. A tanh network prefers to carry on along its last bend and then level out. Neither preference has anything to do with springs.</p>
+<p>A PINN replaces the accidental preference with a deliberate one: among all curves near the dots, take one that obeys the equation of motion.</p>
+<h3>How a prediction is scored</h3>
+<p>Each method is scored by the mean squared error at 500 times in (0.3, 1], against the true motion with no noise. The scoring grid never overlaps the data, and <a class="srclink" href="source.html#tests/test_data.py@def test_scoring_times_never_touch_the_dots">a test</a> makes sure of it.</p>
+<p>Two reference points make the score readable. A method that always answers zero, meaning "it has stopped", gets 0.078. A method that uses the dots and the equation as well as possible gets about 5.5&nbsp;&times;&nbsp;10<sup>&minus;6</sup> on average, and <a href="results.html">chapter 7</a> explains why. Useful answers lie between those two numbers.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">Why can't a normal network just learn the pattern from the ten points?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>Because the points only cover about 70% of one swing, and the loss is computed only at those points. Every curve that passes near them has nearly the same loss, whatever it does afterwards. Training can't tell them apart, so the continuation is decided by the architecture and the random starting weights. The network does its job well. Its job never mentioned the future.</p></div></div>
+</div>
+
+<nav class="pager measure" aria-label="Chapters"><a href="index.html">&larr; Contents</a><a href="spring.html">02 &middot; The spring &rarr;</a></nav>
+</main>
+<footer class="foot"><span>Ten Dots / field guide</span><span><a href="https://github.com/JeyaVardhan-L/Physics-informed-neural-network">Repository</a><a href="index.html">Contents</a><a href="source.html">Source</a><a href="questions.html">Questions</a></span></footer>
+<script src="assets/site.js"></script>
+<script src="assets/engine.js"></script>
+<script src="assets/results-data.js"></script>
+<script src="assets/figkit.js"></script>
+<script src="assets/figures.js"></script>
+<script src="assets/figures-results.js"></script>
+</body>
+</html>

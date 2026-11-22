@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The spring &middot; Ten Dots</title>
+<meta name="description" content="A physics-informed neural network sees ten noisy dots and predicts what comes next. Built from first principles, with every step shown.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8c2-9 4-9 6 0s4 6 8 0' fill='none' stroke='%232b4cf2' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><a class="brand" href="index.html">Ten Dots <span>/ field guide</span></a><nav aria-label="Site"><a href="index.html">Contents</a><a href="route.html">Route</a><a href="source.html">Source</a><a href="questions.html">Questions</a><a href="log.html">Build log</a></nav></header>
+<main id="main" class="page">
+<div class="divider">02 &middot; The spring</div>
+<header class="chapter-head"><span class="num">Chapter 02</span><h1>The spring</h1><p class="lede">One equation, three forces, and a closed-form answer to check everything against.</p></header>
+<div class="prose">
+<p>A mass on a spring feels two forces. The spring pulls it back towards the middle with strength proportional to how far it has moved, <i>&minus;k x</i>. Friction resists the motion in proportion to speed, <i>&minus;c x&prime;</i>. Newton's second law says mass times acceleration equals the total force:</p>
+<div class="eq">m x&Prime; = &minus;c x&prime; &minus; k x &nbsp;&nbsp;so&nbsp;&nbsp; m x&Prime; + c x&prime; + k x = 0</div>
+<p>This is an <b>ordinary differential equation</b>, or ODE. It gives a relation between position, velocity and acceleration that holds at every instant, and leaves you to work out where the mass is. This project uses <code>m = 1</code>, <code>c = 3</code> and <code>k = 225</code>.</p>
+</div>
+<figure class="fig" data-fig="forces">
+<span class="fig-label">FIG_002</span>
+<div class="fig-body"></div>
+<figcaption><b>Three terms, one zero</b> Drag the time. The three bars change all the time and their sum does not. The PINN is trained to make its own version of that last bar vanish.</figcaption>
+</figure>
+<div class="prose">
+<h3>Solving it</h3>
+<p>Guess that the solution is an exponential, <i>x = e<sup>st</sup></i>. Each derivative multiplies by <i>s</i>, so the equation becomes a quadratic, <i>m s&sup2; + c s + k = 0</i>. Its roots are</p>
+<div class="eq">s = &minus;&delta; &plusmn; &radic;(&delta;&sup2; &minus; &omega;<sub>0</sub>&sup2;), &nbsp;&nbsp; &delta; = c / 2m, &nbsp;&nbsp; &omega;<sub>0</sub> = &radic;(k / m)</div>
+<p>Here &delta; = 1.5 and &omega;<sub>0</sub> = 15, so the square root is of a negative number and the roots are complex. A complex exponential is a rotation, so the mass oscillates while its height decays. This is the <b>underdamped</b> case. The oscillation frequency is &omega;<sub>d</sub> = &radic;(&omega;<sub>0</sub>&sup2; &minus; &delta;&sup2;) = 14.92, slightly slower than &omega;<sub>0</sub> because friction holds it back.</p>
+<div class="eq">x(t) = e<sup>&minus;&delta;t</sup> (a cos &omega;<sub>d</sub>t + b sin &omega;<sub>d</sub>t)</div>
+<p>The two constants come from the start. Setting <i>t = 0</i> gives <i>a = x<sub>0</sub></i>. Differentiating and setting <i>t = 0</i> gives <i>b = (v<sub>0</sub> + &delta;x<sub>0</sub>) / &omega;<sub>d</sub></i>. It is easy to assume <i>b = 0</i> when the mass starts at rest, and that is wrong: the envelope is already falling at that moment, so the sine has to make up for it. <a class="srclink" href="source.html#pinn/physics.py@def _coefficients">the two constants</a></p>
+</div>
+<figure class="fig" data-fig="knobs">
+<span class="fig-label">FIG_003</span>
+<div class="fig-body"></div>
+<figcaption><b>Turn the knobs</b> Set friction to zero, then raise it. Then raise the stiffness and watch the fraction of a period that the ten dots would cover.</figcaption>
+</figure>
+<div class="prose">
+<h3>The damping ratio</h3>
+<p>The number &zeta; = c / (2&radic;(mk)) decides the character of the motion. Below 1 it oscillates, at exactly 1 it returns as fast as possible without overshooting, above 1 it creeps back. Here &zeta; = 0.1. The code <a class="srclink" href="source.html#pinn/physics.py@if self.zeta">refuses</a> &zeta; &ge; 1, because the formula above would take the square root of a negative number and return <code>nan</code>.</p>
+<h3>Trusting the reference</h3>
+<p>Every later claim is measured against this formula, so it is tested first. The tests compare <code>velocity()</code> with a numerical slope of <code>position()</code>, and <code>acceleration()</code>, which is defined from the ODE, with a numerical slope of <code>velocity()</code>. If the formula were wrong, the second comparison would fail. Another test checks that energy never rises. <a class="srclink" href="source.html#tests/test_physics.py@def test_closed_form_satisfies_the_equation">the test</a></p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">If you have the exact solution, why use a network at all?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>Here you wouldn't. The exact solution is what makes this a good place to learn, because every prediction can be checked against the truth. The method earns its place where there is no closed form: nonlinear equations, partial differential equations on awkward shapes, or cases where some coefficient is unknown and has to be found from measurements. Chapter 9 does a small version of that last one.</p></div></div>
+</div>
+
+<nav class="pager measure" aria-label="Chapters"><a href="question.html">&larr; 01 &middot; Ten dots</a><a href="network.html">03 &middot; The network &rarr;</a></nav>
+</main>
+<footer class="foot"><span>Ten Dots / field guide</span><span><a href="https://github.com/JeyaVardhan-L/Physics-informed-neural-network">Repository</a><a href="index.html">Contents</a><a href="source.html">Source</a><a href="questions.html">Questions</a></span></footer>
+<script src="assets/site.js"></script>
+<script src="assets/engine.js"></script>
+<script src="assets/results-data.js"></script>
+<script src="assets/figkit.js"></script>
+<script src="assets/figures.js"></script>
+<script src="assets/figures-results.js"></script>
+</body>
+</html>

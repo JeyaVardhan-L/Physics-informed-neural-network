@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Differentiating the network itself &middot; Ten Dots</title>
+<meta name="description" content="A physics-informed neural network sees ten noisy dots and predicts what comes next. Built from first principles, with every step shown.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 8c2-9 4-9 6 0s4 6 8 0' fill='none' stroke='%232b4cf2' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><a class="brand" href="index.html">Ten Dots <span>/ field guide</span></a><nav aria-label="Site"><a href="index.html">Contents</a><a href="route.html">Route</a><a href="source.html">Source</a><a href="questions.html">Questions</a><a href="log.html">Build log</a></nav></header>
+<main id="main" class="page">
+<div class="divider">04 &middot; Derivatives</div>
+<header class="chapter-head"><span class="num">Chapter 04</span><h1>Differentiating the network itself</h1><p class="lede">To ask whether a curve obeys an equation, you need its slope and its bend, exactly and at any point.</p></header>
+<div class="prose">
+<p>The equation contains <i>x&prime;</i> and <i>x&Prime;</i>. A network outputs <i>x</i>. The bridge is that a network is a composition of simple functions, so the chain rule gives its derivatives exactly.</p>
+<p>Two different derivatives are involved, and mixing them up is the most common confusion about PINNs.</p>
+<ul>
+<li><b>With respect to the input:</b> how the position changes when <i>time</i> changes. These are <i>x&prime;</i> and <i>x&Prime;</i>, and they go into the loss.</li>
+<li><b>With respect to the weights:</b> how the loss changes when a <i>weight</i> changes. This is ordinary backpropagation, and it goes to the optimiser.</li>
+</ul>
+<p>A PINN takes the first kind, builds a loss from it, then takes the second kind of that loss. Training therefore needs derivatives of a derivative of a derivative.</p>
+</div>
+<figure class="fig" data-fig="carry">
+<span class="fig-label">FIG_006</span>
+<div class="fig-body"></div>
+<figcaption><b>Three numbers through four stages</b> Step through a one-neuron network. Each stage passes on a value, a slope and a bend, and the last stage holds x, x&prime; and x&Prime;.</figcaption>
+</figure>
+<div class="prose">
+<h3>In PyTorch</h3>
+<div class="excerpt"><header><b>pinn/derivatives.py</b><span>the core of it</span></header><pre>t = t.detach().clone().requires_grad_(True)
+x = net(t)
+v = _slope(x, t)
+a = _slope(v, t)</pre></div>
+<p><code>requires_grad_(True)</code> is on the <i>time</i>, which is what makes autograd record how the output depends on it. <code>detach().clone()</code> makes a private copy, so the caller's tensor is not changed as a side effect.</p>
+<p><code>torch.autograd.grad</code> differentiates a scalar, and <code>x</code> has one entry for each time. Passing <code>grad_outputs=torch.ones_like(y)</code> differentiates the sum of all entries. That is safe here because <code>x[i]</code> depends only on <code>t[i]</code>, so the derivative of the sum with respect to <code>t[i]</code> is the derivative of <code>x[i]</code> alone. Batch normalisation would break this, since it lets one row of a batch affect another. <a class="srclink" href="source.html#pinn/derivatives.py@(dy,) = torch.autograd.grad">the call</a></p>
+<p><code>create_graph=True</code> is the argument that matters most. It records the differentiation itself, so the result can be differentiated again. Remove it and <code>v</code> is a plain table of numbers with no history. The second call then has nothing to walk back through. If only the second call lacked it, the loss would still compute, and no gradient from <i>x&Prime;</i> would reach the weights. <a class="srclink" href="source.html#tests/test_derivatives.py@def test_second_derivative_still_reaches_the_weights">a test</a> guards this.</p>
+<h3>Why not finite differences?</h3>
+<p>The second difference, <i>(x(t+h) &minus; 2x(t) + x(t&minus;h)) / h&sup2;</i>, subtracts nearly equal numbers and divides by something tiny. A large <i>h</i> gives truncation error and a small <i>h</i> gives rounding error. Autograd has neither. The tests still use finite differences as an independent check, with loose tolerances, because a method that shares no code with the thing being tested is the best kind of test.</p>
+<h3>The activation has to bend</h3>
+<p>The second derivative of the network is built from the second derivative of its activation. If that is zero, the mass term vanishes from the equation, whatever the weights are.</p>
+</div>
+<figure class="fig" data-fig="activations">
+<span class="fig-label">FIG_007</span>
+<div class="fig-body"></div>
+<figcaption><b>Value, slope, bend</b> Pick an activation and look at the third panel. Then pick ReLU.</figcaption>
+</figure>
+<div class="prose">
+<p>With ReLU the result is a wrong answer that arrives without an error message: <i>m x&Prime;</i> is zero, the remaining terms ask for <i>c x&prime; + k x = 0</i>, and the network goes after that. Its solutions decay like <i>e<sup>&minus;75t</sup></i>, so the trained network is almost exactly zero. The measured error is 0.078, the same as always answering zero, against 3.6&nbsp;&times;&nbsp;10<sup>&minus;6</sup> for tanh. <a class="srclink" href="source.html#tests/test_derivatives.py@def test_relu_has_no_second_derivative">the test that records it</a></p>
+<p>A second failure turned up in testing. A straight line has a constant slope, and a constant has no graph, so asking for its derivative raised a <code>RuntimeError</code>. The fix is <a class="srclink" href="source.html#pinn/derivatives.py@if not y.requires_grad">two lines</a>: if there is nothing to differentiate, the answer is zero.</p>
+</div>
+<div class="qa">
+<div class="row"><span class="lab">IN:</span><span class="q">What does create_graph=True do, and what breaks without it?</span></div>
+<div class="row"><span class="lab">OUT:</span><div class="a"><p>Autograd normally frees the graph after a backward pass and returns the gradient as plain numbers. With <code>create_graph=True</code> the gradient is itself part of a graph. A PINN needs that twice: once to differentiate x&prime; into x&Prime;, and once because the loss contains x&Prime; and has to send gradients through it to the weights. Without it, the second derivative can't be taken, or the physics term stops teaching the network anything.</p></div></div>
+</div>
+
+<nav class="pager measure" aria-label="Chapters"><a href="network.html">&larr; 03 &middot; The network</a><a href="loss.html">05 &middot; The loss &rarr;</a></nav>
+</main>
+<footer class="foot"><span>Ten Dots / field guide</span><span><a href="https://github.com/JeyaVardhan-L/Physics-informed-neural-network">Repository</a><a href="index.html">Contents</a><a href="source.html">Source</a><a href="questions.html">Questions</a></span></footer>
+<script src="assets/site.js"></script>
+<script src="assets/engine.js"></script>
+<script src="assets/results-data.js"></script>
+<script src="assets/figkit.js"></script>
+<script src="assets/figures.js"></script>
+<script src="assets/figures-results.js"></script>
+</body>
+</html>
