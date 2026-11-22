@@ -98,3 +98,6 @@ What it is, the measured results, how to run it.
 
 == Publish the guide
 The built pages. This entry can't list itself with a hash until the next build, so the newest commit is always one step ahead of this page.
+
+== Correct what the create_graph exercise shows
+Running the exercise showed three failures of two kinds. The route had described one of them.

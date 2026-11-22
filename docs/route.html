@@ -33,7 +33,7 @@ python -m venv .venv
 .venv\Scripts\activate            # Windows. Linux and macOS: source .venv/bin/activate
 pip install -r requirements.txt
 python -m pytest -q</pre></div>
-<p><b>Expect.</b> All tests pass in about two minutes. If <code>python</code> is not found on Linux or macOS, use <code>python3</code>.</p>
+<p><b>Expect.</b> All tests pass in a minute or two. If <code>python</code> is not found on Linux or macOS, use <code>python3</code>.</p>
 <label><input type="checkbox" id="r1c"><span><b>Change.</b> On the cover, press <b>Physics on</b> to switch it off. Explain to yourself why the two curves are now identical.</span></label>
 <label><input type="checkbox" id="r1d"><span><b>Say.</b> What is given, what is asked, and what is the one thing the second network has that the first does not?</span></label>
 </section>
@@ -74,7 +74,7 @@ python -m pytest -q</pre></div>
 <label><input type="checkbox" id="r5b"><span><b>Do.</b> Redo FIG_006 with a pen before stepping through it.</span></label>
 <div class="excerpt"><header><b>Run</b><span>terminal</span></header><pre>python -c "import torch; from pinn.derivatives import derivatives; t=torch.linspace(0,1,5,dtype=torch.float64).reshape(-1,1); print(derivatives(lambda t: t**3, t))"</pre></div>
 <p><b>Expect.</b> x = t&sup3;, v = 3t&sup2;, a = 6t.</p>
-<label><input type="checkbox" id="r5c"><span><b>Change.</b> Set <code>create_graph=False</code> and run <code>python -m pytest tests/test_derivatives.py</code>. Read which tests fail and how. Nothing crashes: the guard for straight lines returns zeros. Undo it.</span></label>
+<label><input type="checkbox" id="r5c"><span><b>Change.</b> Set <code>create_graph=False</code> and run <code>python -m pytest tests/test_derivatives.py</code>. Three tests fail. In two of them x&Prime; is silently zero, because the guard for straight lines returns zeros. Only the test that sends gradients back through x&Prime; alone raises an error. Undo it.</span></label>
 <label><input type="checkbox" id="r5d"><span><b>Say.</b> Two kinds of derivative are involved. Which one goes into the loss and which one goes to the optimiser?</span></label>
 </section>
 <section class="prose route" id="stop-6">
