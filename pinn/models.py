@@ -79,6 +79,15 @@ def train_pinn(
     return Result(net, history)
 
 
+def dense_residual(net, osc, n=2000):
+    """Physics loss at n times, most of which training never visited.
+
+    If this is far above the training value, the network has learned to obey
+    the equation only at the points where it is checked.
+    """
+    return float(physics_loss(net, column(np.linspace(0, T_END, n)), osc.m, osc.c, osc.k).detach())
+
+
 def future_mse(predict, osc):
     """Mean squared error on (T_DATA, T_END], against the noiseless truth."""
     t = future_grid(start=T_DATA, stop=T_END)
